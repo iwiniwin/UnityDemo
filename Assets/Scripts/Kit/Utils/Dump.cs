@@ -96,7 +96,7 @@ public class Output
             return EscapeMapping[Regex.Escape(m.Value)];
         }
 
-        public void FormatValue(object obj, int indentLevel, int? startBracketLevel = null){
+        public void FormatValue(object obj, int? indentLevel = null){
             if (this.isMaxLevel())
                 return;
             if (obj == null){
@@ -149,19 +149,31 @@ public class Output
             }
 
             if (obj is DateTime dateTime){
-
+                if (dateTime == DateTime.MinValue)
+                {
+                    this.Write($"DateTime.MinValue | {dateTime:O}", indentLevel);
+                }
+                else if (dateTime == DateTime.MaxValue)
+                {
+                    this.Write($"DateTime.MaxValue | {dateTime:O}", indentLevel);
+                }
+                else
+                {
+                    this.Write($"\"{dateTime:O}\"", indentLevel);
+                }
             }
 
             if (obj is Enum){
-
+                this.Write($"{obj.GetType().FullName}.{obj} | {(int)obj}", indentLevel);
             }
 
             if (obj is Guid guid){
-
+                this.Write($"\"{guid:D}\"", indentLevel);
+                return;
             }
 
-            if (obj is Array){
-                this.ForamtArray((Array)obj, startBracketLevel);
+            if (obj is Array array){ 
+                this.ForamtArray(array, indentLevel);
                 return;
             }
 
@@ -172,13 +184,13 @@ public class Output
                 object value = obj.GetType().GetProperty(nameof(KeyValuePair<object,object>.Value)).GetValue(obj);
                 this.FormatValue(key, this.level);
                 this.Write(" : ");
-                this.FormatValue(value, 0, 0);
+                this.FormatValue(value, 0);
                 return;
             }
 
 
             if (obj is IEnumerable){ // 迭代器
-                this.StartLine("{", startBracketLevel);
+                this.StartLine("{", indentLevel);
                 this.LineBreak();
                 this.WriteItems((IEnumerable)obj);
                 this.StartLine("}");
@@ -189,7 +201,7 @@ public class Output
 
         }
 
-        private void ForamtArray(Array array, int? startBracketLevel = null){
+        private void ForamtArray(Array array, int? indentLevel){
             int rank = array.Rank;
             int count = 0;
             int[] breakPoints = new int[rank];
@@ -204,8 +216,8 @@ public class Output
                 for(int i = 0; i < breakPoints.Length; i ++){ 
                     if ((count - 1) % breakPoints[i] == 0){
                         startWithBracket = true;
-                        var usestartBracketLevel = count == 1 ? startBracketLevel : null;
-                        this.WriteStartBracket(breakPoints.Length - i, count != 1, usestartBracketLevel);
+                        var usesIndentLevel = count == 1 ? indentLevel : null;
+                        this.WriteStartBracket(breakPoints.Length - i, count != 1, usesIndentLevel);
                         break;
                     }
                 }
@@ -226,13 +238,13 @@ public class Output
             }
         }
 
-        private void WriteStartBracket(int count, bool startWithComma, int? startBracketLevel = null){
+        private void WriteStartBracket(int count, bool startWithComma, int? indentLevel = null){
             for(int i = 0; i < count; i ++){
                 if (startWithComma && i == 0){
                     this.Write(",");
                     this.LineBreak();
                 }
-                this.StartLine("{", i == 0 ? startBracketLevel : null);
+                this.StartLine("{", i == 0 ? indentLevel : null);
                 this.LineBreak();
                 this.level ++;
             }
@@ -259,7 +271,7 @@ public class Output
         }
 
         private void CreateObject(object obj, int? indentLevel = null){
-
+            Debug.LogError("unknow");
         }
 
         public override string ToString(){
@@ -277,7 +289,7 @@ public class Output
         var dumper = new Dumper();
         msg = msg ?? $"{dumper.GetVariableName(obj)}";
         dumper.Write((msg) + " = ");  //$是为了替代string.format() 原先赋值需要占位符和变量 现在可以把字符串中的变量用{}包含起来以达到识别c#变量的目的
-        dumper.FormatValue(obj, 0);
+        dumper.FormatValue(obj);
         dumper.Write(";");
         // // Log(obj.GetType().name);
         // if (obj is Array){
