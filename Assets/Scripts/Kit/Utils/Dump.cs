@@ -1,14 +1,93 @@
-﻿using UnityEngine;
+﻿/**
+ *Author:       LeirZhang
+ *Version:      1.0.0
+ *Date:         2019-08-10 16:52:00
+ *Description:   
+ 用于Unity的日志格式化打印工具，其他C#项目略作修改也可使用
+ 支持包含且不限于数组，字典，列表等各种数据结构的格式化输出
+ Log formatting printing tool for Unity, other C# items can be modified slightly
+ Supports formatted output of various data structures including, but not limited to, arrays, dictionaries, lists, etc.
+**/
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
+using UnityObject = UnityEngine.Object;
+using UnitDebug = UnityEngine.Debug;
 
 public delegate void LogDelegate(object message);
+public delegate void LogDelegate2(object message, UnityObject context);
 
 public class Output
 {   
+    public static LogDelegate Log = new LogDelegate(UnitDebug.Log);
+    public static LogDelegate2 Log2 = new LogDelegate2(UnitDebug.Log);
+
+    //
+    // 摘要:
+    //     Dump a object to the Console.
+    //
+    // 参数:
+    //   obj:
+    //     object to be converted to string representation for display.
+    public static void Dump(object obj){
+        Log(Format(obj));
+    }
+
+    //
+    // 摘要:
+    //     Dump a object to the Console.
+    //
+    // 参数:
+    //   obj:
+    //     object to be converted to string representation for display.
+    //   msg:
+    //     mark of output information
+    public static void Dump(object obj, string msg){
+        Log(Format(obj, msg));
+    } 
+
+    //
+    // 摘要:
+    //     Dump a object to the Console.
+    //
+    // 参数:
+    //   obj:
+    //     object to be converted to string representation for display.
+    //   context:
+    //     Object to which the obj applies.
+    public static void Dump(object obj, UnityObject context){
+        Log2(Format(obj), context);
+    }
+
+    //
+    // 摘要:
+    //     Dump a object to the Console.
+    //
+    // 参数:
+    //   obj:
+    //     object to be converted to string representation for display.
+    //   msg:
+    //     mark of output information
+    //   context:
+    //     Object to which the obj applies.
+    public static void Dump(object obj, string msg, UnityObject context){
+        Log2(Format(obj, msg), context);
+    }
+
+    public static string Format(object obj, string msg = null){
+        var dumper = new Dumper();
+        msg = msg ?? $"{dumper.GetVariableName(obj)}";
+        dumper.Write((msg) + " = ");  //$是为了替代string.format() 原先赋值需要占位符和变量 现在可以把字符串中的变量用{}包含起来以达到识别c#变量的目的
+        if (obj is UnityObject){
+            obj = obj.ToString();
+        }
+        dumper.FormatValue(obj);
+        dumper.Write(";");
+        return dumper.ToString();
+    } 
+
     private class Dumper
     {
         private readonly StringBuilder stringBuilder;
@@ -17,9 +96,211 @@ public class Output
         public int maxLevel = int.MaxValue;
         public int indentSize = 4;
         public char indentChar = ' ';
+        public char equalChar = '=';
+
         public Dumper(){
             this.level = 0;
             this.stringBuilder = new StringBuilder();
+        }
+
+        public void FormatValue(object obj, int? indentLevel = null){
+            if (this.isMaxLevel())
+                return;
+
+            if (obj == null){
+                this.Write("null", indentLevel);
+                return;
+            }
+            if (obj is bool){ // is判断对象是否为某一类型
+                this.Write($"{obj.ToString().ToLower()}", indentLevel);
+                return;
+            }
+
+            if(obj is string){
+                var str = Escape($@"{obj}");  //@加在字符串前表示其中的转义字符不被处理 可以让字符串跨行 可以使关键字作为标识符
+                this.Write($"\"{str}\"", indentLevel);
+                return;
+            }
+
+            if(obj is char){
+                var c = obj.ToString().Replace("\0", "").Trim();
+                this.Write($"\'{c}\'", indentLevel);
+                return;
+            }
+
+            if(obj is double){
+                this.Write($"{obj}d", indentLevel);
+                return;
+            }
+
+            if(obj is decimal){ // decimal 128位精确的十进制值
+                this.Write($"{obj}m", indentLevel);
+                return;
+            }
+
+            // 8位无符号整数 8位有符号整数 32位有符号整数 32位无符号整数 16位有符号整数 16位无符号整数
+            if(obj is byte || obj is sbyte || obj is int || obj is uint || obj is short || obj is ushort){ 
+                this.Write($"{obj}", indentLevel);
+                return;
+            }
+
+            if (obj is float)
+            {
+                this.Write($"{obj}f", indentLevel);
+                return;
+            }
+
+            if (obj is long || obj is ulong) // 64位有符号整数 64位无符号整数
+            {
+                this.Write($"{obj}L", indentLevel);
+                return;
+            }
+
+            if (obj is DateTime dateTime){
+                if (dateTime == DateTime.MinValue)
+                {
+                    this.Write($"DateTime.MinValue | {dateTime:O}", indentLevel);
+                }
+                else if (dateTime == DateTime.MaxValue)
+                {
+                    this.Write($"DateTime.MaxValue | {dateTime:O}", indentLevel);
+                }
+                else
+                {
+                    this.Write($"\"{dateTime:O}\"", indentLevel);
+                }
+                return;
+            }
+
+            if (obj is Enum){
+                this.Write($"{obj.GetType().FullName}.{obj} | {(int)obj}", indentLevel);
+                return;
+            }
+
+            if (obj is Guid guid){
+                this.Write($"\"{guid:D}\"", indentLevel);
+                return;
+            }
+
+            if (obj is Array array){ 
+                this.ForamtArray(array, indentLevel);
+                return;
+            }
+
+            
+            Type type = obj.GetType();
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>)){ // GetGenericTypeDefinition获取当前构造类型的基础泛型类定义 typeof的参数必须是类
+                object key = obj.GetType().GetProperty(nameof(KeyValuePair<object,object>.Key)).GetValue(obj);
+                object value = obj.GetType().GetProperty(nameof(KeyValuePair<object,object>.Value)).GetValue(obj);
+                this.FormatValue(key, this.level);
+                this.Write($" {this.equalChar} ");
+                this.FormatValue(value, 0);
+                return;
+            }
+
+
+            if (obj is IEnumerable){ // 迭代器
+                this.StartLine("{", indentLevel);
+                this.LineBreak();
+                this.WriteItems((IEnumerable)obj);
+                this.StartLine("}");
+                return;
+            }
+
+            this.FormatUnknownObject(obj, indentLevel);
+
+        }
+
+        private void ForamtArray(Array array, int? indentLevel){
+            int rank = array.Rank;
+            int count = 0;
+            int[] breakPoints = new int[rank];
+            breakPoints[rank - 1] = array.GetLength(rank - 1);
+            for(int i = rank - 2; i >= 0; i --){
+                breakPoints[i] = array.GetLength(i) * breakPoints[i + 1];
+            }
+            IEnumerator enumerator = array.GetEnumerator();
+            while(enumerator.MoveNext()){
+                count ++;
+                bool startWithBracket = false;
+                for(int i = 0; i < breakPoints.Length; i ++){ 
+                    if ((count - 1) % breakPoints[i] == 0){
+                        startWithBracket = true;
+                        var usesIndentLevel = count == 1 ? indentLevel : null;
+                        this.WriteStartBracket(breakPoints.Length - i, count != 1, usesIndentLevel);
+                        break;
+                    }
+                }
+                
+                if (!startWithBracket){
+                    this.Write(",");
+                    this.LineBreak();
+                }
+                this.FormatValue(enumerator.Current, this.level);
+
+                for(int i = rank - 1; i >= 0; i --){
+                    if (count % breakPoints[i] == 0){
+                        this.LineBreak();
+                        this.level --;
+                        this.StartLine("}");
+                    }
+                }
+            }
+        }
+
+        private void WriteStartBracket(int count, bool startWithComma, int? indentLevel = null){
+            for(int i = 0; i < count; i ++){
+                if (startWithComma && i == 0){
+                    this.Write(",");
+                    this.LineBreak();
+                }
+                this.StartLine("{", i == 0 ? indentLevel : null);
+                this.LineBreak();
+                this.level ++;
+            }
+        }
+
+        private void WriteItems(IEnumerable items){
+            this.level ++;
+            if (this.isMaxLevel()){
+                this.level --;
+                return;
+            }
+
+            var enumer = items.GetEnumerator();
+            if (enumer.MoveNext()){
+                this.FormatValue(enumer.Current, this.level);
+                while(enumer.MoveNext()){
+                    this.Write(",");
+                    this.LineBreak();
+                    this.FormatValue(enumer.Current, this.level);
+                }
+                this.LineBreak();
+            }
+            this.level --;
+        }
+
+        private void FormatUnknownObject(object obj, int? indentLevel = null){
+            this.StartLine("{", indentLevel);
+            this.LineBreak();
+            this.level ++;
+            var properties = obj.GetType().GetProperties();
+            var last = properties[properties.Length - 1];
+            foreach(var property in properties){
+                this.StartLine($"{property.Name} {this.equalChar} ");
+                object value;
+                try{
+                    value = property.GetValue(obj);
+                }catch (Exception e){
+                    value = e.GetType();
+                }
+                this.FormatValue(value.ToString(), 0); //mark
+                if (property != last)
+                    this.Write(",");
+                this.LineBreak();
+            }
+            this.level --;
+            this.StartLine("}");
         }
 
         public bool isMaxLevel(){
@@ -96,218 +377,10 @@ public class Output
             return EscapeMapping[Regex.Escape(m.Value)];
         }
 
-        public void FormatValue(object obj, int? indentLevel = null){
-            if (this.isMaxLevel())
-                return;
-            if (obj == null){
-                this.Write("null", indentLevel);
-                return;
-            }
-            if (obj is bool){ // is判断对象是否为某一类型
-                this.Write($"{obj.ToString().ToLower()}", indentLevel);
-                return;
-            }
-
-            if(obj is string){
-                var str = Escape($@"{obj}");  //@加在字符串前表示其中的转义字符不被处理 可以让字符串跨行 可以使关键字作为标识符
-                this.Write($"\"{str}\"", indentLevel);
-                return;
-            }
-
-            if(obj is char){
-                var c = obj.ToString().Replace("\0", "").Trim();
-                this.Write($"\'{c}\'", indentLevel);
-                return;
-            }
-
-            if(obj is double){
-                this.Write($"{obj}d", indentLevel);
-                return;
-            }
-
-            if(obj is decimal){ // decimal 128位精确的十进制值
-                this.Write($"{obj}m", indentLevel);
-                return;
-            }
-
-            // 8位无符号整数 8位有符号整数 32位有符号整数 32位无符号整数 16位有符号整数 16位无符号整数
-            if(obj is byte || obj is sbyte || obj is int || obj is uint || obj is short || obj is ushort){ 
-                this.Write($"{obj}", indentLevel);
-                return;
-            }
-
-            if (obj is float)
-            {
-                this.Write($"{obj}f", indentLevel);
-                return;
-            }
-
-            if (obj is long || obj is ulong) // 64位有符号整数 64位无符号整数
-            {
-                this.Write($"{obj}L", indentLevel);
-                return;
-            }
-
-            if (obj is DateTime dateTime){
-                if (dateTime == DateTime.MinValue)
-                {
-                    this.Write($"DateTime.MinValue | {dateTime:O}", indentLevel);
-                }
-                else if (dateTime == DateTime.MaxValue)
-                {
-                    this.Write($"DateTime.MaxValue | {dateTime:O}", indentLevel);
-                }
-                else
-                {
-                    this.Write($"\"{dateTime:O}\"", indentLevel);
-                }
-            }
-
-            if (obj is Enum){
-                this.Write($"{obj.GetType().FullName}.{obj} | {(int)obj}", indentLevel);
-            }
-
-            if (obj is Guid guid){
-                this.Write($"\"{guid:D}\"", indentLevel);
-                return;
-            }
-
-            if (obj is Array array){ 
-                this.ForamtArray(array, indentLevel);
-                return;
-            }
-
-            
-            Type type = obj.GetType();
-            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>)){ // GetGenericTypeDefinition获取当前构造类型的基础泛型类定义 typeof的参数必须是类
-                object key = obj.GetType().GetProperty(nameof(KeyValuePair<object,object>.Key)).GetValue(obj);
-                object value = obj.GetType().GetProperty(nameof(KeyValuePair<object,object>.Value)).GetValue(obj);
-                this.FormatValue(key, this.level);
-                this.Write(" : ");
-                this.FormatValue(value, 0);
-                return;
-            }
-
-
-            if (obj is IEnumerable){ // 迭代器
-                this.StartLine("{", indentLevel);
-                this.LineBreak();
-                this.WriteItems((IEnumerable)obj);
-                this.StartLine("}");
-                return;
-            }
-
-            this.CreateObject(obj, indentLevel);
-
-        }
-
-        private void ForamtArray(Array array, int? indentLevel){
-            int rank = array.Rank;
-            int count = 0;
-            int[] breakPoints = new int[rank];
-            breakPoints[rank - 1] = array.GetLength(rank - 1);
-            for(int i = rank - 2; i >= 0; i --){
-                breakPoints[i] = array.GetLength(i) * breakPoints[i + 1];
-            }
-            IEnumerator enumerator = array.GetEnumerator();
-            while(enumerator.MoveNext()){
-                count ++;
-                bool startWithBracket = false;
-                for(int i = 0; i < breakPoints.Length; i ++){ 
-                    if ((count - 1) % breakPoints[i] == 0){
-                        startWithBracket = true;
-                        var usesIndentLevel = count == 1 ? indentLevel : null;
-                        this.WriteStartBracket(breakPoints.Length - i, count != 1, usesIndentLevel);
-                        break;
-                    }
-                }
-                
-                if (!startWithBracket){
-                    this.Write(",");
-                    this.LineBreak();
-                }
-                this.FormatValue(enumerator.Current, this.level);
-
-                for(int i = rank - 1; i >= 0; i --){
-                    if (count % breakPoints[i] == 0){
-                        this.LineBreak();
-                        this.level --;
-                        this.StartLine("}");
-                    }
-                }
-            }
-        }
-
-        private void WriteStartBracket(int count, bool startWithComma, int? indentLevel = null){
-            for(int i = 0; i < count; i ++){
-                if (startWithComma && i == 0){
-                    this.Write(",");
-                    this.LineBreak();
-                }
-                this.StartLine("{", i == 0 ? indentLevel : null);
-                this.LineBreak();
-                this.level ++;
-            }
-        }
-
-        private void WriteItems(IEnumerable items){
-            this.level ++;
-            if (this.isMaxLevel()){
-                this.level --;
-                return;
-            }
-
-            var enumer = items.GetEnumerator();
-            if (enumer.MoveNext()){
-                this.FormatValue(enumer.Current, this.level);
-                while(enumer.MoveNext()){
-                    this.Write(",");
-                    this.LineBreak();
-                    this.FormatValue(enumer.Current, this.level);
-                }
-                this.LineBreak();
-            }
-            this.level --;
-        }
-
-        private void CreateObject(object obj, int? indentLevel = null){
-            Debug.LogError("unknow");
-        }
-
         public override string ToString(){
             return this.stringBuilder.ToString();
         }
     }
-
-    public static LogDelegate Log = new LogDelegate(UnityEngine.Debug.Log);
-
-    // public static void Dump(object obj){
-    //     Dump(obj, "<var>");
-    // }
-
-    public static string Dump(object obj, string msg = null){
-        var dumper = new Dumper();
-        msg = msg ?? $"{dumper.GetVariableName(obj)}";
-        dumper.Write((msg) + " = ");  //$是为了替代string.format() 原先赋值需要占位符和变量 现在可以把字符串中的变量用{}包含起来以达到识别c#变量的目的
-        dumper.FormatValue(obj);
-        dumper.Write(";");
-        // // Log(obj.GetType().name);
-        // if (obj is Array){
-        //     string output = "{";
-        //     Array arr = (Array)obj;
-        //     foreach (object a in arr)
-        //     {
-        //         output += (a + ",");
-        //     }
-        //     output += "}";
-        //     Log(msg + " : " + output);
-        // }else{
-        //     Log(msg + " : " + obj);
-        // }
-        string str = dumper.ToString();
-        Log(str);
-        return str;
-    } 
 }
 
 
