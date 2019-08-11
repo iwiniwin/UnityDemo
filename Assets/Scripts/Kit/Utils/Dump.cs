@@ -13,6 +13,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Diagnostics;
 using UnityObject = UnityEngine.Object;
 using UnitDebug = UnityEngine.Debug;
 
@@ -74,6 +75,10 @@ public class Output
     //     Object to which the obj applies.
     public static void Dump(object obj, string msg, UnityObject context){
         Log2(Format(obj, msg), context);
+    }
+
+    public static void DumpTraceback(){
+        Log(new StackTrace(true).ToString());
     }
 
     public static string Format(object obj, string msg = null){
@@ -287,17 +292,19 @@ public class Output
             var properties = obj.GetType().GetProperties();
             var last = properties[properties.Length - 1];
             foreach(var property in properties){
-                this.StartLine($"{property.Name} {this.equalChar} ");
                 object value;
                 try{
                     value = property.GetValue(obj);
                 }catch (Exception e){
                     value = e.GetType();
                 }
-                this.FormatValue(value.ToString(), 0); //mark
-                if (property != last)
-                    this.Write(",");
-                this.LineBreak();
+                if (value != null){
+                    this.StartLine($"{property.Name} {this.equalChar} ");
+                    this.FormatValue(value.ToString(), 0); //mark
+                    if (property != last)
+                        this.Write(",");
+                    this.LineBreak();
+                }
             }
             this.level --;
             this.StartLine("}");
