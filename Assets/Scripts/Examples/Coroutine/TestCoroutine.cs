@@ -12,7 +12,7 @@ public class TestCoroutine : MonoBehaviour
         // Dump("jjjj");
         // MyCoroutine.Instance.StartCoroutine(new MyWaitForSeconds(3.0f));
         StartCoroutine(Test());
-        MyCoroutine.Instance.MyStartCoroutine(MyTest());
+        CoroutineExample.Instance.MyStartCoroutine(MyTest());
         // Dump("hhhh");
     }
 
@@ -32,6 +32,7 @@ public class TestCoroutine : MonoBehaviour
     }
 
     IEnumerator Test(){
+        yield return null;
         Dump(Time.time, "hhhhhhhhhhh");
         yield return new WaitForSeconds(3);
         Dump(Time.time, "zzz");
@@ -39,12 +40,15 @@ public class TestCoroutine : MonoBehaviour
         Dump(Time.time, "vvvvv");
         yield return null;
         Dump(Time.time, "jjj");
-        yield return new WaitForSeconds(2);
+        // yield return new WaitForSeconds(2);
         // yield return StartCoroutine(Test2());
-        Dump(Time.time, "bbb");
+
+        // yield return StartCoroutine(Test2());
+        // Dump(Time.time, "bbb");
     }
 
     IEnumerator MyTest(){
+        yield return null;
         Dump(Time.time, "my hhhhhhhhhhh");
         yield return new MyWaitForSeconds(3);
         Dump(Time.time, "my zzz");
@@ -52,14 +56,21 @@ public class TestCoroutine : MonoBehaviour
         Dump(Time.time, "my vvvvv");
         yield return null;
         Dump(Time.time, "my jjj");
-        yield return new MyWaitForSeconds(2);
+        // yield return new MyWaitForSeconds(2);
         // yield return StartCoroutine(Test2());
-        // yield return MyCoroutine.Instance.MyStartCoroutine(Test2());
-        Dump(Time.time, "my bbb");
+        // yield return CoroutineExample.Instance.MyStartCoroutine(MyTest2());
+        // Dump(Time.time, "my bbb");
     }
 
     IEnumerator Test2(){
+        // Dump(Time.time, "zzzzzzzz");
         yield return new WaitForSeconds(3);
-        Dump("ssss", "fff");
+        Dump(Time.time, "fff");
+    }
+
+    IEnumerator MyTest2(){
+        // Dump(Time.time, "my zzzzzzzz");
+        yield return new MyWaitForSeconds(3);
+        Dump(Time.time, "my fff");
     }
 }
