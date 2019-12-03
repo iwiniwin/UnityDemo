@@ -1,10 +1,10 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using static Kit.Utils.Output;
+using static UKit.Utils.Output;
 using System;
 using System.Threading;
-using Kit.Utils;
+using UKit.Utils;
 
 enum Coll
 {
@@ -49,7 +49,7 @@ public class Test : MonoBehaviour
         try
         {
             Dump("start ........");
-            Thread.Sleep(5000);
+            Thread.Sleep(500);
             Dump("end.........");
         }
         catch (System.Exception e)
@@ -60,6 +60,16 @@ public class Test : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        Dump("start...");
+        Profile.Time.start();
+
+        Thread.Sleep(1234);
+
+        double a = Profile.Time.stop();
+
+        Dump(a, "hhhhhhhhhhhh");
+        // Dump("zzz", "ddd", this.gameObject);
+        // Debug.Log("hhh", this.gameObject);
         // ThreadStart child = new ThreadStart(CallToChild);
         // Thread childThread = new Thread(child);
         // Subscribe s = new Subscribe();

@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using static Kit.Utils.Output;
+using static UKit.Utils.Output;
 
 namespace Example.Coroutine{
     public class MyYieldInstruction{
