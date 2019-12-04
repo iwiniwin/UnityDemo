@@ -1,2 +1,2 @@
-# UnityGameKit
-UnityGameKit
+# UnityDemo
+UnityDemo
