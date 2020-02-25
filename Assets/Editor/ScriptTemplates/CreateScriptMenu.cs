@@ -36,6 +36,7 @@ class MyDoCreateScriptAsset : EndNameEditAction{
     public override void Action(int instanceId, string pathName, string resourceFile){
         UnityEngine.Object o = CreateScriptAssetFromTemplate(pathName, resourceFile);
         ProjectWindowUtil.ShowCreatedAsset(o);
+        AssetDatabase.OpenAsset(o.GetInstanceID(), 1);
     }
 
     internal static UnityEngine.Object CreateScriptAssetFromTemplate(string pathName, string resourceFile){
