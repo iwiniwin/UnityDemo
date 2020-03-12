@@ -5,10 +5,65 @@ using UKit.Core;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Reflection;
+using System.Runtime;
 using static UKit.Utils.Output;
 
 public class AssetsMenuExtend
 {
+    // [MenuItem("Assets/Show In Project")]
+    static void ShowInProject(){
+        // Dump(Selection.activeObject.name, "666666666");
+        // Dump(Selection.activeObject.GetInstanceID(), "tttttt");
+        // Dump("ssssssssss");
+        // EditorUtility.Ping
+        
+        // EditorGUIUtility.PingObject();
+        string path = AssetDatabase.GetAssetPath(Selection.activeObject.GetInstanceID());
+        AssetDatabase.LoadAssetAtPath<Object>(Path.GetDirectoryName(path)).GetInstanceID();
+    }
+
+    private static void ShowFolderContents(string path){
+        int folderInstanceID = AssetDatabase.LoadAssetAtPath<Object>(path).GetInstanceID();
+        Assembly editorAssembly = typeof(Editor).Assembly;
+        System.Type projectBrowserType = editorAssembly.GetType("UnityEditor.ProjectBrowser");
+        MethodInfo showFolderContents = projectBrowserType.GetMethod("showFolderContents", BindingFlags.Instance | BindingFlags.NonPublic);
+        // Find any open project browser windows
+        Object[] projectBrowserInstances = Resources.FindObjectsOfTypeAll(projectBrowserType);
+        if(projectBrowserInstances.Length > 0){
+            for (int i = 0; i < projectBrowserInstances.Length; i++)
+            {
+                ShowFolderContentsInternal(projectBrowserInstances[i], showFolderContents, folderInstanceID);
+            }
+        }else{
+            EditorWindow projectBrowser = OpenNewProjectBrowser(projectBrowserType);
+            ShowFolderContentsInternal(projectBrowser, showFolderContents, folderInstanceID);
+        }
+    }
+
+    private static void ShowFolderContentsInternal(Object projectBrowser, MethodInfo showFolderContents, int folderInstanceID){
+        SerializedObject serializedObject = new SerializedObject(projectBrowser);
+        bool inTwoColumnMode = serializedObject.FindProperty("m_ViewMode").enumValueIndex == 1;
+        if(!inTwoColumnMode){
+            // If the browser is not in two column mode, we must set it to show the folder contents.
+            MethodInfo setTwoColumns = projectBrowser.GetType().GetMethod("SetTwoColumns", BindingFlags.Instance | BindingFlags.NonPublic);
+            setTwoColumns.Invoke(projectBrowser, null);
+        }
+        bool revealAndFrameInFolderTree = true;
+        showFolderContents.Invoke(projectBrowser, new object[]{folderInstanceID, revealAndFrameInFolderTree});
+    }
+
+    private static EditorWindow OpenNewProjectBrowser(System.Type projectBrowserType){
+        EditorWindow projectBrowser = EditorWindow.GetWindow(projectBrowserType);
+        projectBrowser.Show();
+
+        // Unity does some special initialization logic, which we must call,
+        // before we can use the ShowFolderContents method (else we get a NullReferenceException).
+        MethodInfo init = projectBrowserType.GetMethod("Init", BindingFlags.Instance | BindingFlags.Public);
+        init.Invoke(projectBrowser, null);
+        return projectBrowser;
+    }
+
     /// <summary>
     /// 清除无用资源
     /// </summary>
