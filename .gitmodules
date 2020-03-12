@@ -1,3 +1,6 @@
 [submodule "Assets/Scripts/UKit"]
 	path = Assets/Scripts/UKit
 	url = https://github.com/iwiniwin/UKit.git
+[submodule "Assets/Editor"]
+	path = Assets/Editor
+	url = https://github.com/iwiniwin/Editor.git
