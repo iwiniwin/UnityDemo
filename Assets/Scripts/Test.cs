@@ -61,11 +61,11 @@ public class Test : MonoBehaviour
     void Start()
     {
         Dump("start...");
-        Profile.Time.start();
+        Profile.Time.Start();
 
         Thread.Sleep(1234);
 
-        double a = Profile.Time.stop();
+        double a = Profile.Time.Stop();
 
         Dump(a, "hhhhhhhhhhhh");
         // Dump("zzz", "ddd", this.gameObject);
