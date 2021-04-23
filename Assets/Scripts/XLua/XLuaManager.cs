@@ -1,17 +1,16 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UKit.Core;
-using UKit;
 using XLua;
+using UDK;
 
-public class XLuaManager : MonoBehaviour
+public class XLuaManager : UnitySingleton<XLuaManager>
 {
     public const string luaScriptsFolder = "LuaScripts";
     
     LuaEnv luaenv = null;
 
-    void InitLuaEnv(LuaEnv.CustomLoader loader = null)
+    public void InitLuaEnv(LuaEnv.CustomLoader loader = null)
     {
         luaenv = new LuaEnv();
         luaenv.AddLoader(loader ?? DefaultCustomLoader);
@@ -73,7 +72,7 @@ public class XLuaManager : MonoBehaviour
         filepath = luaPath.Replace(".", "/") + ".lua";
         scriptPath = System.IO.Path.Combine(Application.dataPath, luaScriptsFolder);
         scriptPath = System.IO.Path.Combine(scriptPath, filepath);
-        return FileSystem.SafeReadAllBytes(scriptPath);
+        return FileUtil.ReadAllBytes(scriptPath);
 #endif
         //AB加载或者其他加载
         // return LuaReaderHelper.Instance.LoadFromPackage(luaPath);  // todo

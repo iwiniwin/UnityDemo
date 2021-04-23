@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using static UKit.Utils.Output;
+using static UDK.Output;
 using Example.Coroutine;
 
 public class TestCoroutine : MonoBehaviour

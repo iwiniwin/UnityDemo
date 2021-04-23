@@ -1,10 +1,9 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using static UKit.Utils.Output;
+using static UDK.Output;
 using System;
 using System.Threading;
-using UKit.Utils;
 
 enum Coll
 {
@@ -61,13 +60,13 @@ public class Test : MonoBehaviour
     void Start()
     {
         Dump("start...");
-        Profile.Time.Start();
+        // Profile.Time.Start();
 
         Thread.Sleep(1234);
 
-        double a = Profile.Time.Stop();
+        // double a = Profile.Time.Stop();
 
-        Dump(a, "hhhhhhhhhhhh");
+        // Dump(a, "hhhhhhhhhhhh");
         // Dump("zzz", "ddd", this.gameObject);
         // Debug.Log("hhh", this.gameObject);
         // ThreadStart child = new ThreadStart(CallToChild);
