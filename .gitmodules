@@ -4,3 +4,6 @@
 [submodule "Assets/UEditor"]
 	path = Assets/UEditor
 	url = https://github.com/iwiniwin/UEditor.git
+[submodule "Assets/LuaScripts/LuaKit"]
+	path = Assets/LuaScripts/LuaKit
+	url = https://github.com/iwiniwin/LuaKit.git
