@@ -8,12 +8,12 @@ public class XLuaManager : UnitySingleton<XLuaManager>
 {
     public const string luaScriptsFolder = "LuaScripts";
     
-    LuaEnv luaenv = null;
+    LuaEnv luaEnv = null;
 
     public void InitLuaEnv(LuaEnv.CustomLoader loader = null)
     {
-        luaenv = new LuaEnv();
-        luaenv.AddLoader(loader ?? DefaultCustomLoader);
+        luaEnv = new LuaEnv();
+        luaEnv.AddLoader(loader ?? DefaultCustomLoader);
     }
 
     float tickInterval = 10;
@@ -21,21 +21,21 @@ public class XLuaManager : UnitySingleton<XLuaManager>
     int fullGcFrameCount = 100;
     void Update()
     {
-        if(luaenv != null) {
+        if(luaEnv != null) {
             if(Time.time - lastTickTime > tickInterval) {
-                luaenv.Tick();
+                luaEnv.Tick();
                 lastTickTime = Time.time;
             }
             if(Time.frameCount % fullGcFrameCount == 0) {
-                luaenv.FullGc();
+                luaEnv.FullGc();
             }
         }
     }
 
     public void DoString(string scriptContent) {
-        if(luaenv != null) {
+        if(luaEnv != null) {
             try{
-                luaenv.DoString(scriptContent);
+                luaEnv.DoString(scriptContent);
             }catch(System.Exception ex) {
                 string msg = string.Format("XLua DoString exception : {0}\n{1}", ex.Message, ex.StackTrace);
                 Debug.LogError(msg);
@@ -53,10 +53,10 @@ public class XLuaManager : UnitySingleton<XLuaManager>
     }
 
     public void DisposeLuaEnv() {
-        if(luaenv != null) {
+        if(luaEnv != null) {
             try{
-                luaenv.Dispose();
-                luaenv = null;
+                luaEnv.Dispose();
+                luaEnv = null;
             }catch(System.Exception ex) {
                 string msg = string.Format("XLua Dispose exception : {0}\n{1}", ex.Message, ex.StackTrace);
                 Debug.LogError(msg);
