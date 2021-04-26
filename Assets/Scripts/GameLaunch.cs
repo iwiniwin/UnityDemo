@@ -10,6 +10,7 @@ public class GameLaunch : MonoBehaviour
     {
         XLuaManager.Instance.InitLuaEnv();
         XLuaManager.Instance.LoadScript("Main");
+        XLuaManager.Instance.AddComponent(this.gameObject, "Component");
         yield break;
     }
 
