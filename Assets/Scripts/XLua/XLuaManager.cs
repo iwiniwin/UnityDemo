@@ -11,6 +11,8 @@ public class XLuaManager : UnitySingleton<XLuaManager>
 
     LuaEnv luaEnv = null;
 
+    private Dictionary<LuaComponentIndicator, bool> indicators = new Dictionary<LuaComponentIndicator, bool>(); 
+
     public void InitLuaEnv(LuaEnv.CustomLoader loader = null)
     {
         luaEnv = new LuaEnv();
@@ -94,6 +96,10 @@ public class XLuaManager : UnitySingleton<XLuaManager>
                 indicator.LuaUpdate += scriptUpdate;
                 indicator.LuaOnDestroy += scriptOnDestroy;
                 indicator.AddLuaComponent(scriptName);
+                if(!indicators.ContainsKey(indicator))
+                {
+                    indicators.Add(indicator, true);
+                }
             }
         }
         return ret;
@@ -116,6 +122,15 @@ public class XLuaManager : UnitySingleton<XLuaManager>
         }
     }
 
+    public void ClearIndicators() 
+    {
+        foreach(var indicator in indicators.Keys) 
+        {
+            indicator.ClearLuaComponent();
+        }
+        indicators.Clear();
+    }
+
     public static byte[] DefaultCustomLoader(ref string luaPath)
     {
         string scriptPath = string.Empty;
@@ -132,6 +147,7 @@ public class XLuaManager : UnitySingleton<XLuaManager>
 
     void OnDestroy()
     {
+        ClearIndicators();
         DisposeLuaEnv();
     }
 }

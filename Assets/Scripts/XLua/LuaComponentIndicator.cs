@@ -19,16 +19,22 @@ public class LuaComponentIndicator : MonoBehaviour
     }
 
     void OnDestroy() {
+        ClearLuaComponent();
+    }
+
+    public void AddLuaComponent(string name)
+    {
+        LuaComponents.Add(name);
+    }
+
+    public void ClearLuaComponent() 
+    {
+        LuaComponents.Clear();
         if(LuaOnDestroy != null)
         {
             LuaOnDestroy(this.gameObject);
         }
         LuaUpdate = null;
         LuaOnDestroy = null;
-    }
-
-    public void AddLuaComponent(string name)
-    {
-        LuaComponents.Add(name);
     }
 }
