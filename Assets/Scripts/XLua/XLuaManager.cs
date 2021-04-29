@@ -11,10 +11,14 @@ public class XLuaManager : UnitySingleton<XLuaManager>
 
     LuaEnv luaEnv = null;
 
-    private Dictionary<LuaComponentIndicator, bool> indicators = new Dictionary<LuaComponentIndicator, bool>(); 
+    void Awake()
+    {
+        InitLuaEnv();
+    }
 
     public void InitLuaEnv(LuaEnv.CustomLoader loader = null)
     {
+        if(luaEnv != null) return;
         luaEnv = new LuaEnv();
         luaEnv.AddLoader(loader ?? DefaultCustomLoader);
     }
@@ -40,17 +44,18 @@ public class XLuaManager : UnitySingleton<XLuaManager>
 
     public object[] DoString(string scriptContent, string chunkName = "chunk", LuaTable env = null)
     {
-        if (luaEnv != null)
+        if(luaEnv == null)
         {
-            try
-            {
-                return luaEnv.DoString(scriptContent, chunkName, env);
-            }
-            catch (System.Exception ex)
-            {
-                string msg = string.Format("XLua DoString exception : {0}\n{1}", ex.Message, ex.StackTrace);
-                Debug.LogError(msg);
-            }
+            InitLuaEnv();
+        }
+        try
+        {
+            return luaEnv.DoString(scriptContent, chunkName, env);
+        }
+        catch (System.Exception ex)
+        {
+            string msg = string.Format("XLua DoString exception : {0}\n{1}", ex.Message, ex.StackTrace);
+            Debug.LogError(msg);
         }
         return null;
     }
@@ -64,45 +69,6 @@ public class XLuaManager : UnitySingleton<XLuaManager>
     {
         DoString(string.Format("package.loaded['{0}'] = nil", scriptName));
         return LoadScript(scriptName, chunkName, env);
-    }
-
-    public object[] AddComponent(GameObject gameObject, string scriptName)
-    {
-        LuaComponentIndicator indicator = gameObject.GetComponent<LuaComponentIndicator>();
-        if(indicator == null)
-        {
-            indicator = gameObject.AddComponent<LuaComponentIndicator>();
-        }
-        LuaTable scriptEnv = luaEnv.NewTable();
-        scriptEnv.Set("self", this);
-        if (luaEnv == null) return null;
-        object[] ret = LoadScript(scriptName);
-        if (ret != null && ret.Length >= 1)
-        {
-            LuaTable luaComponent = ret[0] as LuaTable;
-            if (luaComponent != null)
-            {
-                Action<GameObject> scriptStart;
-                Action<GameObject> scriptUpdate;
-                Action<GameObject> scriptOnDestroy;
-                luaComponent.Get("Start", out scriptStart);
-                luaComponent.Get("Update", out scriptUpdate);
-                luaComponent.Get("OnDestroy", out scriptOnDestroy);
-                if (scriptStart != null)
-                {
-                    scriptStart(gameObject);
-                    scriptStart = null;
-                }
-                indicator.LuaUpdate += scriptUpdate;
-                indicator.LuaOnDestroy += scriptOnDestroy;
-                indicator.AddLuaComponent(scriptName);
-                if(!indicators.ContainsKey(indicator))
-                {
-                    indicators.Add(indicator, true);
-                }
-            }
-        }
-        return ret;
     }
 
     public void DisposeLuaEnv()
@@ -122,15 +88,6 @@ public class XLuaManager : UnitySingleton<XLuaManager>
         }
     }
 
-    public void ClearIndicators() 
-    {
-        foreach(var indicator in indicators.Keys) 
-        {
-            indicator.ClearLuaComponent();
-        }
-        indicators.Clear();
-    }
-
     public static byte[] DefaultCustomLoader(ref string luaPath)
     {
         string scriptPath = string.Empty;
@@ -145,9 +102,19 @@ public class XLuaManager : UnitySingleton<XLuaManager>
         // return LuaReaderHelper.Instance.LoadFromPackage(luaPath);  // todo
     }
 
+    private void ClearComponentBinders()
+    {
+        var objects = FindObjectsOfType<XLuaComponentBinder>();
+        foreach(var obj in objects)
+        {
+            obj.DestroyLuaComponents();  // Destroy(obj)实际的对象销毁操作始终延迟到当前更新循环结束，因此主动通过DestroyLuaComponents清空委托
+            Destroy(obj);  
+        }
+    }
+
     void OnDestroy()
     {
-        ClearIndicators();
+        ClearComponentBinders();
         DisposeLuaEnv();
     }
 }

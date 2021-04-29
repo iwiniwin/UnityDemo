@@ -8,9 +8,7 @@ public class GameLaunch : MonoBehaviour
     // Start is called before the first frame update
     IEnumerator Start()
     {
-        XLuaManager.Instance.InitLuaEnv();
         XLuaManager.Instance.LoadScript("Main");
-        XLuaManager.Instance.AddComponent(this.gameObject, "Component");
         yield break;
     }
 
