@@ -10,6 +10,8 @@ public static class LuaCallCSharpList
     public static List<Type> unity_lua_call_cs_list = new List<Type>()
     {
         typeof(GameObject),
+        typeof(WWW),
+        typeof(WaitForSeconds)
     };
 
     [LuaCallCSharp]

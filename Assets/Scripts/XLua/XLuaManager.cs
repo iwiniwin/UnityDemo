@@ -71,6 +71,11 @@ public class XLuaManager : UnitySingleton<XLuaManager>
         return LoadScript(scriptName, chunkName, env);
     }
 
+    public LuaEnv GetLuaEnv()
+    {
+        return luaEnv;
+    }
+
     public void DisposeLuaEnv()
     {
         if (luaEnv != null)
