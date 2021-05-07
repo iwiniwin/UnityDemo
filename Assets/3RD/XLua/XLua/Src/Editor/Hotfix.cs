@@ -1653,7 +1653,7 @@ namespace XLua
             var mono_path = Path.Combine(Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName),
                 "Data/MonoBleedingEdge/bin/mono.exe");
 #endif
-            var inject_tool_path = "./Tools/XLuaHotfixInject.exe";
+            var inject_tool_path = "./Tools/XLua/XLuaHotfixInject.exe";
             if (!File.Exists(inject_tool_path))
             {
                 UnityEngine.Debug.LogError("please install the Tools");
