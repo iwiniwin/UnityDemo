@@ -1,9 +1,9 @@
-[submodule "Assets/Scripts/UKit"]
-	path = Assets/Scripts/UKit
-	url = https://github.com/iwiniwin/UKit.git
 [submodule "Assets/LuaScripts/LuaKit"]
 	path = Assets/LuaScripts/LuaKit
 	url = https://github.com/iwiniwin/LuaKit.git
 [submodule "Assets/3RD/UEditor"]
 	path = Assets/3RD/UEditor
 	url = https://github.com/iwiniwin/UEditor.git
+[submodule "Assets/UDK"]
+	path = Assets/UDK
+	url = https://github.com/iwiniwin/UDK.git
