@@ -2,7 +2,7 @@
 	path = Assets/LuaScripts/LuaKit
 	url = https://github.com/iwiniwin/LuaKit.git
 [submodule "Assets/3RD/UEditor"]
-	path = Assets/3RD/UEditor
+	path = Assets/ThirdParty/UEditor
 	url = https://github.com/iwiniwin/UEditor.git
 [submodule "Assets/UDK"]
 	path = Assets/UDK
