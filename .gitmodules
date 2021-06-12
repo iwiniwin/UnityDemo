@@ -4,3 +4,6 @@
 [submodule "Assets/ThirdParty/UEditor"]
 	path = Assets/ThirdParty/UEditor
 	url = https://github.com/iwiniwin/UEditor.git
+[submodule "Assets/ThirdParty/UDK"]
+	path = Assets/ThirdParty/UDK
+	url = https://github.com/iwiniwin/UDK.git
