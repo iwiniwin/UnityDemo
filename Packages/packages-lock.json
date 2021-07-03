@@ -1,5 +1,11 @@
 {
   "dependencies": {
+    "com.iwin.remotefileexplorer": {
+      "version": "file:unity-remote-file-explorer",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
     "com.unity.2d.sprite": {
       "version": "1.0.0",
       "depth": 0,
@@ -106,9 +112,9 @@
       "url": "https://packages.unity.cn"
     },
     "com.unity.ugui": {
-      "version": "1.0.0",
+      "version": "file:com.unity.ugui",
       "depth": 0,
-      "source": "builtin",
+      "source": "embedded",
       "dependencies": {
         "com.unity.modules.ui": "1.0.0",
         "com.unity.modules.imgui": "1.0.0"
