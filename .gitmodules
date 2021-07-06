@@ -7,3 +7,6 @@
 [submodule "Assets/ThirdParty/UDK"]
 	path = Assets/ThirdParty/UDK
 	url = https://github.com/iwiniwin/UDK.git
+[submodule "Packages/com.iwin.remotefileexplorer"]
+	path = Packages/com.iwin.remotefileexplorer
+	url = https://github.com/iwiniwin/unity-remote-file-explorer.git
