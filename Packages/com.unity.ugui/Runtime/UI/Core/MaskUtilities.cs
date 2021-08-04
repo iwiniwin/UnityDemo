@@ -74,6 +74,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Find the stencil depth for a given element.
+        /// stencil depth 实际表示transform到stopAfter之间的Mask个数，如果每层有多个Mask则只计一个
         /// </summary>
         /// <param name="transform">The starting transform to search.</param>
         /// <param name="stopAfter">Where the search of parents should stop</param>
@@ -150,12 +151,12 @@ namespace UnityEngine.UI
                 for (int rmi = 0; rmi < rectMaskComponents.Count; rmi++)
                 {
                     componentToReturn = rectMaskComponents[rmi];
-                    if (componentToReturn.gameObject == clippable.gameObject)
+                    if (componentToReturn.gameObject == clippable.gameObject)  // 自己身上的RectMask2D对自身不起作用
                     {
                         componentToReturn = null;
                         continue;
                     }
-                    if (!componentToReturn.isActiveAndEnabled)
+                    if (!componentToReturn.isActiveAndEnabled)  // RectMask2D未激活不起作用
                     {
                         componentToReturn = null;
                         continue;
@@ -163,7 +164,7 @@ namespace UnityEngine.UI
                     clippable.gameObject.GetComponentsInParent(false, canvasComponents);
                     for (int i = canvasComponents.Count - 1; i >= 0; i--)
                     {
-                        if (!IsDescendantOrSelf(canvasComponents[i].transform, componentToReturn.transform) && canvasComponents[i].overrideSorting)
+                        if (!IsDescendantOrSelf(canvasComponents[i].transform, componentToReturn.transform) && canvasComponents[i].overrideSorting)  // 在overrideSorting为true的Canvas之上的RectMask2D不起作用
                         {
                             componentToReturn = null;
                             break;

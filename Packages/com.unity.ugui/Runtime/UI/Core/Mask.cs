@@ -161,6 +161,7 @@ namespace UnityEngine.UI
             // we want to destroy what is there
             if (desiredStencilBit == 1)
             {
+                // CompareFunction.Always，始终通过，执行StencilOp.Replace操作，将模板缓冲中的值替换为（1 & 255）= 1
                 var maskMaterial = StencilMaterial.Add(baseMaterial, 1, StencilOp.Replace, CompareFunction.Always, m_ShowMaskGraphic ? ColorWriteMask.All : 0);
                 StencilMaterial.Remove(m_MaskMaterial);
                 m_MaskMaterial = maskMaterial;
@@ -168,7 +169,9 @@ namespace UnityEngine.UI
                 var unmaskMaterial = StencilMaterial.Add(baseMaterial, 1, StencilOp.Zero, CompareFunction.Always, 0);
                 StencilMaterial.Remove(m_UnmaskMaterial);
                 m_UnmaskMaterial = unmaskMaterial;
+                // 设置渲染器可使用的材质数量为1
                 graphic.canvasRenderer.popMaterialCount = 1;
+                // 设置渲染器使用的材质
                 graphic.canvasRenderer.SetPopMaterial(m_UnmaskMaterial, 0);
 
                 return m_MaskMaterial;

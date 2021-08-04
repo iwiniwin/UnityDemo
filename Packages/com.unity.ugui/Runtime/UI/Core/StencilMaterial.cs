@@ -41,6 +41,7 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Add a new material using the specified base and stencil ID.
+        /// stencilID对应shader中的_Stencil，是参考值，与stencil buffer中的值进行运算的
         /// </summary>
         public static Material Add(Material baseMat, int stencilID, StencilOp operation, CompareFunction compareFunction, ColorWriteMask colorWriteMask, int readMask, int writeMask)
         {
