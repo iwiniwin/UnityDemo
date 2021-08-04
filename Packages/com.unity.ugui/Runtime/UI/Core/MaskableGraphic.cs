@@ -106,6 +106,11 @@ namespace UnityEngine.UI
             // if we have a enabled Mask component then it will
             // generate the mask material. This is an optimization
             // it adds some coupling between components though :(
+            // 如果m_StencilValue = 0 表示Mask组件挂载自己身上，此时也是不起作用的，Mask组件只对子元素起作用
+            // 如果m_StencilValue = 3，表示上面有3层Mask组件
+            // stencilID = (1 << m_StencilValue) - 1 = 1000 - 1 = 0111
+            // readMask (1 << m_StencilValue) - 1 = 0111
+            // StencilOp.Keep，即使通过了模板测试，也不会修改模板缓冲
             if (m_StencilValue > 0 && !isMaskingGraphic)
             {
                 var maskMat = StencilMaterial.Add(toUse, (1 << m_StencilValue) - 1, StencilOp.Keep, CompareFunction.Equal, ColorWriteMask.All, (1 << m_StencilValue) - 1, 0);

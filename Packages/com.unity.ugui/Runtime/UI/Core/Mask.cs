@@ -178,6 +178,15 @@ namespace UnityEngine.UI
             }
 
             //otherwise we need to be a bit smarter and set some read / write masks
+            // 上面还有1个Mask，则stencilDepth = 1， desiredStencilBit = 10
+            // stencilID是 10 | (10 - 1)  = 10 | (01) = 11
+            // readMask desiredStencilBit - 1 = 10 - 1 = 01
+            // writeMask desiredStencilBit | (desiredStencilBit - 1)  = 11
+            // 处理嵌套Mask的情况，如果除了自己，上面还有2个Mask，则stencilDepth = 2，desiredStencilBit = 100
+            // stencilID是 100 | (100 - 1)  = 100 | (011) = 111
+            // 用每一位是1，来表示该层有Mask
+            // readMask desiredStencilBit - 1 = 100 - 1 = 011。这样的readMask可以保证比较时不包含自己本层，读取参考值和模板缓冲中的值都会与上readMask
+            // writeMask desiredStencilBit | (desiredStencilBit - 1)  = 111
             var maskMaterial2 = StencilMaterial.Add(baseMaterial, desiredStencilBit | (desiredStencilBit - 1), StencilOp.Replace, CompareFunction.Equal, m_ShowMaskGraphic ? ColorWriteMask.All : 0, desiredStencilBit - 1, desiredStencilBit | (desiredStencilBit - 1));
             StencilMaterial.Remove(m_MaskMaterial);
             m_MaskMaterial = maskMaterial2;
