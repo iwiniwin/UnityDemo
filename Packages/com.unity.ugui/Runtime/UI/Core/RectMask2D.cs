@@ -93,9 +93,9 @@ namespace UnityEngine.UI
                 if (m_Canvas == null)
                 {
                     var list = ListPool<Canvas>.Get();
-                    gameObject.GetComponentsInParent(false, list);
+                    gameObject.GetComponentsInParent(false, list);  // 获取画布顺序是父Canvas-父父Canvas-父父父Canvas
                     if (list.Count > 0)
-                        m_Canvas = list[list.Count - 1];
+                        m_Canvas = list[list.Count - 1];  // 取最后一个，顶级Canvas
                     else
                         m_Canvas = null;
                     ListPool<Canvas>.Release(list);
@@ -107,6 +107,8 @@ namespace UnityEngine.UI
 
         /// <summary>
         /// Get the Rect for the mask in canvas space.
+        /// 返回自身rectTransform在顶级画布下的坐标矩形
+        /// 返回的矩形的x，y表示自身rectTransform的左上角相对于顶级画布锚点的偏移
         /// </summary>
         public Rect canvasRect
         {
