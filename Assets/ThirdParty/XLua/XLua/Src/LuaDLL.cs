@@ -322,6 +322,7 @@ namespace XLua.LuaDLL
         [DllImport(LUADLL, CallingConvention = CallingConvention.Cdecl)]
         public static extern void xlua_pushlstring(IntPtr L, byte[] str, int size);
 
+        // 压入字符串
         public static void xlua_pushasciistring(IntPtr L, string str) // for inner use only
         {
             if (str == null)

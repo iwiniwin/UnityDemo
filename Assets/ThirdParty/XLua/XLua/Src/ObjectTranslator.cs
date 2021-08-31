@@ -671,13 +671,14 @@ namespace XLua
 
         public void OpenLib(RealStatePtr L)
 		{
+            // 将全局变量xlua的值压栈，并返回该值的类型
             if (0 != LuaAPI.xlua_getglobal(L, "xlua"))
             {
                 throw new Exception("call xlua_getglobal fail!" + LuaAPI.lua_tostring(L, -1));
             }
             LuaAPI.xlua_pushasciistring(L, "import_type");
 			LuaAPI.lua_pushstdcallcfunction(L,importTypeFunction);
-			LuaAPI.lua_rawset(L, -3);
+			LuaAPI.lua_rawset(L, -3);  // 不触发元方法赋值t[k] = v，函数完成后会将k,v弹出。t是-3处的表（xlua），k是栈顶值（import_type），v是栈顶之下的值（importTypeFunction）
             LuaAPI.xlua_pushasciistring(L, "import_generic_type");
             LuaAPI.lua_pushstdcallcfunction(L, StaticLuaCallbacks.ImportGenericType);
             LuaAPI.lua_rawset(L, -3);
@@ -705,9 +706,11 @@ namespace XLua
             LuaAPI.xlua_pushasciistring(L, "release");
             LuaAPI.lua_pushstdcallcfunction(L, StaticLuaCallbacks.ReleaseCsObject);
             LuaAPI.lua_rawset(L, -3);
-            LuaAPI.lua_pop(L, 1);
+            LuaAPI.lua_pop(L, 1);  // 从栈顶弹出1个元素
 
+            // 创建一张新的空表压栈
             LuaAPI.lua_createtable(L, 1, 4); // 4 for __gc, __tostring, __index, __newindex
+            // 将栈顶对象添加到LuaIndexes.LUA_REGISTRYINDEX指向的表中，并返回其索引。（最后会弹出栈顶对象）
             common_array_meta = LuaAPI.luaL_ref(L, LuaIndexes.LUA_REGISTRYINDEX);
             LuaAPI.lua_createtable(L, 1, 4); // 4 for __gc, __tostring, __index, __newindex
             common_delegate_meta = LuaAPI.luaL_ref(L, LuaIndexes.LUA_REGISTRYINDEX);

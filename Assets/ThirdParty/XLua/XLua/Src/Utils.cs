@@ -1506,6 +1506,7 @@ namespace XLua
 			return firstParameterConstraint;
 		}
 
+		// 判断方法是否是静态的且不带有MonoPInvokeCallback属性
 		public static bool IsStaticPInvokeCSFunction(LuaCSFunction csFunction)
 		{
 #if UNITY_WSA && !UNITY_EDITOR
