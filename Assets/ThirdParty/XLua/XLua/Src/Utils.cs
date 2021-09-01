@@ -971,6 +971,10 @@ namespace XLua
 			System.Diagnostics.Debug.Assert(top_enter == LuaAPI.lua_gettop(L));
 		}
 
+		/// <summary>
+		/// 开始注册CS对象前的预操作
+		/// 准备CS类型对应的元表，method表，getter表，setter表
+		/// </summary>
 		//meta: -4, method:-3, getter: -2, setter: -1
 		public static void BeginObjectRegister(Type type, RealStatePtr L, ObjectTranslator translator, int meta_count, int method_count, int getter_count,
 			int setter_count, int type_id = -1)
@@ -983,6 +987,7 @@ namespace XLua
 			else
 			{
 				LuaAPI.luaL_getmetatable(L, type.FullName);
+				// 如果type.FullName对应的元表是空，则创建一个新的元表，并设置到注册表中
 				if (LuaAPI.lua_isnil(L, -1))
 				{
 					LuaAPI.lua_pop(L, 1);
@@ -991,18 +996,18 @@ namespace XLua
 			}
 			LuaAPI.lua_pushlightuserdata(L, LuaAPI.xlua_tag());
 			LuaAPI.lua_pushnumber(L, 1);
-			LuaAPI.lua_rawset(L, -3);
+			LuaAPI.lua_rawset(L, -3);  // 为元表设置标志
 
 			if ((type == null || !translator.HasCustomOp(type)) && type != typeof(decimal))
 			{
 				LuaAPI.xlua_pushasciistring(L, "__gc");
 				LuaAPI.lua_pushstdcallcfunction(L, translator.metaFunctions.GcMeta);
-				LuaAPI.lua_rawset(L, -3);
+				LuaAPI.lua_rawset(L, -3);  // 为元表设置__gc方法
 			}
 
 			LuaAPI.xlua_pushasciistring(L, "__tostring");
 			LuaAPI.lua_pushstdcallcfunction(L, translator.metaFunctions.ToStringMeta);
-			LuaAPI.lua_rawset(L, -3);
+			LuaAPI.lua_rawset(L, -3);  // 为元表设置__tostring方法
 
 			if (method_count == 0)
 			{
@@ -1032,6 +1037,7 @@ namespace XLua
 			}
 		}
 
+		// 如果索引是负值，将其转换为对应的正值索引
 		static int abs_idx(int top, int idx)
 		{
 			return idx > 0 ? idx : top + idx + 1;
@@ -1042,6 +1048,9 @@ namespace XLua
 		public const int GETTER_IDX = -2;
 		public const int SETTER_IDX = -1;
 
+		/// <summary>
+		/// 结束CS对象的注册
+		/// </summary>
 #if GEN_CODE_MINIMIZE
         public static void EndObjectRegister(Type type, RealStatePtr L, ObjectTranslator translator, CSharpWrapper csIndexer,
             CSharpWrapper csNewIndexer, Type base_type, CSharpWrapper arrayIndexer, CSharpWrapper arrayNewIndexer)

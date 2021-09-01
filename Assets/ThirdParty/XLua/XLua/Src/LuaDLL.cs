@@ -54,6 +54,7 @@ namespace XLua.LuaDLL
         [DllImport(LUADLL, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr lua_setupvalue(IntPtr L, int funcindex, int n);
 
+        // 把 {L} 表示的线程压栈。 如果这个线程是当前状态机的主线程的话，返回 1
         [DllImport(LUADLL, CallingConvention = CallingConvention.Cdecl)]
 		public static extern int lua_pushthread(IntPtr L);
 
@@ -101,14 +102,17 @@ namespace XLua.LuaDLL
         [DllImport(LUADLL, CallingConvention = CallingConvention.Cdecl)]
         public static extern uint xlua_objlen(IntPtr L, int stackPos);
 
+        // 创建一张新的空表压栈。 参数 narr 建议了这张表作为序列使用时会有多少个元素； 参数 nrec 建议了这张表可能拥有多少序列之外的元素。 Lua 会使用这些建议来预分配这张新表。 如果你知道这张表用途的更多信息，预分配可以提高性能。 否则，你可以使用函数 lua_newtable 。
 		[DllImport(LUADLL, CallingConvention = CallingConvention.Cdecl)]
 		public static extern void lua_createtable(IntPtr L, int narr, int nrec);//[-0, +0, m]
 
+        // 创建一个空表，并将其压栈
         public static void lua_newtable(IntPtr L)//[-0, +0, m]
         {
 			lua_createtable(L, 0, 0);
 		}
 
+        // 把全局变量 {name} 里的值压栈，返回该值的类型
         [DllImport(LUADLL, CallingConvention = CallingConvention.Cdecl)]
         public static extern int xlua_getglobal(IntPtr L, string name);//[-1, +0, m]
 
@@ -134,15 +138,18 @@ namespace XLua.LuaDLL
         [DllImport(LUADLL,CallingConvention=CallingConvention.Cdecl)]
 		public static extern int lua_rawget(IntPtr L, int index);
 
+        // 不触发元方法赋值t[k] = v，函数完成后会将k,v弹出。t是{index}处的表，v是栈顶值，k是栈顶之下的值
         [DllImport(LUADLL,CallingConvention=CallingConvention.Cdecl)]
 		public static extern void lua_rawset(IntPtr L, int index);//[-2, +0, m]
 
+        // 把一张表弹出栈，并将其设为{objIndex}处的值的元表。
         [DllImport(LUADLL,CallingConvention=CallingConvention.Cdecl)]
 		public static extern int lua_setmetatable(IntPtr L, int objIndex);
 
         [DllImport(LUADLL, CallingConvention = CallingConvention.Cdecl)]
         public static extern int lua_rawequal(IntPtr L, int index1, int index2);
 
+        // 把栈上{index}处的元素作一个副本压栈。
         [DllImport(LUADLL,CallingConvention=CallingConvention.Cdecl)]
 		public static extern void lua_pushvalue(IntPtr L, int index);
 
@@ -152,9 +159,11 @@ namespace XLua.LuaDLL
         [DllImport(LUADLL,CallingConvention=CallingConvention.Cdecl)]
 		public static extern void lua_replace(IntPtr L, int index);
 
+        // 返回栈顶元素的索引。 因为索引是从 1 开始编号的， 所以这个结果等于栈上的元素个数； 特别指出，0 表示栈为空。
 		[DllImport(LUADLL,CallingConvention=CallingConvention.Cdecl)]
 		public static extern int lua_gettop(IntPtr L);
 
+        // 返回给定{index}处值的类型， 当索引无效（或无法访问）时则返回 LUA_TNONE
 		[DllImport(LUADLL,CallingConvention=CallingConvention.Cdecl)]
 		public static extern LuaTypes lua_type(IntPtr L, int index);
 
@@ -171,6 +180,7 @@ namespace XLua.LuaDLL
 			return lua_type(L,index)==LuaTypes.LUA_TBOOLEAN;
 		}
 
+        // 针对栈顶的对象，创建并返回一个在索引 registryIndex 指向的表中的 引用 （最后会弹出栈顶对象）
 		[DllImport(LUADLL,CallingConvention=CallingConvention.Cdecl)]
 		public static extern int luaL_ref(IntPtr L, int registryIndex);
 
@@ -179,9 +189,11 @@ namespace XLua.LuaDLL
 			return luaL_ref(L,LuaIndexes.LUA_REGISTRYINDEX);
 		}
 
+        // 把 t[index] 的值压栈， 这里的 t 是指给定{tableIndex}处的表。 这是一次直接访问；就是说，它不会触发元方法。
 		[DllImport(LUADLL,CallingConvention=CallingConvention.Cdecl)]
 		public static extern void xlua_rawgeti(IntPtr L, int tableIndex, long index);
 
+        // 等价于 t[index] = v ， 这里的 t 是指给定tableIndex处的表， 而 v 是栈顶的值。这个函数会将值弹出栈。
 		[DllImport(LUADLL,CallingConvention=CallingConvention.Cdecl)]
 		public static extern void xlua_rawseti(IntPtr L, int tableIndex, long index);//[-1, +0, m]
 
@@ -380,6 +392,7 @@ namespace XLua.LuaDLL
             return null;
         }
 
+        // 创建一张新表newmetatable = { __name = meta}，并赋值 注册表[meta] = newmetatable
         [DllImport(LUADLL,CallingConvention=CallingConvention.Cdecl)]
 		public static extern int luaL_newmetatable(IntPtr L, string meta);//[-0, +1, m]
 
@@ -389,6 +402,7 @@ namespace XLua.LuaDLL
         [DllImport(LUADLL, CallingConvention = CallingConvention.Cdecl)]
         public static extern int xlua_psettable(IntPtr L, int idx);
 
+        // 压栈 注册表[meta]
         public static void luaL_getmetatable(IntPtr L, string meta)
 		{
             xlua_pushasciistring(L, meta);
@@ -424,6 +438,7 @@ namespace XLua.LuaDLL
         [DllImport(LUADLL,CallingConvention=CallingConvention.Cdecl)]
 		public static extern void lua_pushlightuserdata(IntPtr L, IntPtr udata);
 
+        // 已注册到lua中的CS类型的标志
  		[DllImport(LUADLL,CallingConvention=CallingConvention.Cdecl)]
 		public static extern IntPtr xlua_tag();
 
@@ -528,9 +543,11 @@ namespace XLua.LuaDLL
         [DllImport(LUADLL, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr lua_touserdata(IntPtr L, int idx);
 
+        // [xlua.c] 获取给定{idx}处值的type_id
         [DllImport(LUADLL, CallingConvention = CallingConvention.Cdecl)]
         public static extern int xlua_gettypeid(IntPtr L, int idx);
 
+        // 返回lua提供的注册表的有效伪索引
         [DllImport(LUADLL, CallingConvention = CallingConvention.Cdecl)]
         public static extern int xlua_get_registry_index();
 

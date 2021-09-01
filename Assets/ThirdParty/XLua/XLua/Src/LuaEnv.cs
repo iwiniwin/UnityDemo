@@ -81,15 +81,15 @@ namespace XLua
                 rawL = LuaAPI.luaL_newstate();
 
                 //Init Base Libs
-                LuaAPI.luaopen_xlua(rawL);
-                LuaAPI.luaopen_i64lib(rawL);
+                LuaAPI.luaopen_xlua(rawL);  // [xlua.c] 打开状态机中的所有 Lua 标准库，并设置全局表xlua，表中包含三个函数sethook，genaccessor，structclone
+                LuaAPI.luaopen_i64lib(rawL);  // [i64lib.c]
 
                 translator = new ObjectTranslator(this, rawL);
                 translator.createFunctionMetatable(rawL);
-                translator.OpenLib(rawL);
-                ObjectTranslatorPool.Instance.Add(rawL, translator);
+                translator.OpenLib(rawL);  // 为xlua全局表添加更多函数
+                ObjectTranslatorPool.Instance.Add(rawL, translator);  
 
-                LuaAPI.lua_atpanic(rawL, StaticLuaCallbacks.Panic);
+                LuaAPI.lua_atpanic(rawL, StaticLuaCallbacks.Panic);  // 设置painc函数。如果错误发生在保护环境之外， Lua 会先调用 panic 函数 然后调用 abort 来退出宿主程序
 
 #if !XLUA_GENERAL
                 LuaAPI.lua_pushstdcallcfunction(rawL, StaticLuaCallbacks.Print);
@@ -100,7 +100,7 @@ namespace XLua
 #endif
 
                 //template engine lib register
-                TemplateEngine.LuaTemplate.OpenLib(rawL);
+                TemplateEngine.LuaTemplate.OpenLib(rawL);  // 设置全局表template，表中包含两个函数compile，execute
 
                 AddSearcher(StaticLuaCallbacks.LoadBuiltinLib, 2); // just after the preload searcher
                 AddSearcher(StaticLuaCallbacks.LoadFromCustomLoaders, 3);
@@ -118,47 +118,47 @@ namespace XLua
 
                 AddBuildin("CS", StaticLuaCallbacks.LoadCS);
 
-                LuaAPI.lua_newtable(rawL); //metatable of indexs and newindexs functions
+                LuaAPI.lua_newtable(rawL); //metatable of indexs and newindexs functions  // 创建一个空表 newtable
                 LuaAPI.xlua_pushasciistring(rawL, "__index");
                 LuaAPI.lua_pushstdcallcfunction(rawL, StaticLuaCallbacks.MetaFuncIndex);
-                LuaAPI.lua_rawset(rawL, -3);
+                LuaAPI.lua_rawset(rawL, -3);  // newtable["__index"] = MetaFuncIndex
 
                 LuaAPI.xlua_pushasciistring(rawL, Utils.LuaIndexsFieldName);
-                LuaAPI.lua_newtable(rawL);
-                LuaAPI.lua_pushvalue(rawL, -3);
-                LuaAPI.lua_setmetatable(rawL, -2);
-                LuaAPI.lua_rawset(rawL, LuaIndexes.LUA_REGISTRYINDEX);
+                LuaAPI.lua_newtable(rawL);  // 创建一个空表 newtable2
+                LuaAPI.lua_pushvalue(rawL, -3);   // 将newtable的副本压栈
+                LuaAPI.lua_setmetatable(rawL, -2);  // 将newtable的副本设置为newtable2的元表，并将newtable的副本弹出栈
+                LuaAPI.lua_rawset(rawL, LuaIndexes.LUA_REGISTRYINDEX);  // 注册表["LuaIndexs"] = newtable2
 
                 LuaAPI.xlua_pushasciistring(rawL, Utils.LuaNewIndexsFieldName);
-                LuaAPI.lua_newtable(rawL);
+                LuaAPI.lua_newtable(rawL);  // 创建一个空表 newtable3
                 LuaAPI.lua_pushvalue(rawL, -3);
                 LuaAPI.lua_setmetatable(rawL, -2);
-                LuaAPI.lua_rawset(rawL, LuaIndexes.LUA_REGISTRYINDEX);
+                LuaAPI.lua_rawset(rawL, LuaIndexes.LUA_REGISTRYINDEX);  // 注册表["LuaNewIndexs"] = newtable3
 
                 LuaAPI.xlua_pushasciistring(rawL, Utils.LuaClassIndexsFieldName);
-                LuaAPI.lua_newtable(rawL);
+                LuaAPI.lua_newtable(rawL);  // 创建一个空表 newtable4
                 LuaAPI.lua_pushvalue(rawL, -3);
                 LuaAPI.lua_setmetatable(rawL, -2);
-                LuaAPI.lua_rawset(rawL, LuaIndexes.LUA_REGISTRYINDEX);
+                LuaAPI.lua_rawset(rawL, LuaIndexes.LUA_REGISTRYINDEX);  // 注册表["LuaClassIndexs"] = newtable4
 
                 LuaAPI.xlua_pushasciistring(rawL, Utils.LuaClassNewIndexsFieldName);
-                LuaAPI.lua_newtable(rawL);
+                LuaAPI.lua_newtable(rawL);  // 创建一个空表 newtable5
                 LuaAPI.lua_pushvalue(rawL, -3);
                 LuaAPI.lua_setmetatable(rawL, -2);
-                LuaAPI.lua_rawset(rawL, LuaIndexes.LUA_REGISTRYINDEX);
+                LuaAPI.lua_rawset(rawL, LuaIndexes.LUA_REGISTRYINDEX);  // 注册表["LuaClassNewIndexs"] = newtable5
 
                 LuaAPI.lua_pop(rawL, 1); // pop metatable of indexs and newindexs functions
 
                 LuaAPI.xlua_pushasciistring(rawL, MAIN_SHREAD);
                 LuaAPI.lua_pushthread(rawL);
-                LuaAPI.lua_rawset(rawL, LuaIndexes.LUA_REGISTRYINDEX);
+                LuaAPI.lua_rawset(rawL, LuaIndexes.LUA_REGISTRYINDEX);  // 注册表["xlua_main_thread"] = rawL表示的线程
 
                 LuaAPI.xlua_pushasciistring(rawL, CSHARP_NAMESPACE);
                 if (0 != LuaAPI.xlua_getglobal(rawL, "CS"))
                 {
                     throw new Exception("get CS fail!");
                 }
-                LuaAPI.lua_rawset(rawL, LuaIndexes.LUA_REGISTRYINDEX);
+                LuaAPI.lua_rawset(rawL, LuaIndexes.LUA_REGISTRYINDEX);  // 注册表["xlua_csharp_namespace"] = CS全局表
 
 #if !XLUA_GENERAL && (!UNITY_WSA || UNITY_EDITOR)
                 translator.Alias(typeof(Type), "System.MonoType");
@@ -168,7 +168,7 @@ namespace XLua
                 {
                     throw new Exception("get _G fail!");
                 }
-                translator.Get(rawL, -1, out _G);
+                translator.Get(rawL, -1, out _G);  // 将lua全局表_G赋值给_G成员变量
                 LuaAPI.lua_pop(rawL, 1);
 
                 errorFuncRef = LuaAPI.get_error_func_ref(rawL);
@@ -459,7 +459,13 @@ namespace XLua
                 refQueue.Enqueue(action);
             }
         }
-
+        
+        /// <summary>
+        /// 主要做三件事
+        /// 1. 添加全局表CS，并为其初始化元表
+        /// 2. 添加全局函数，typeof，cast，setfenv，getfenv，base
+        /// 3. 为全局表xlua添加更多函数，hotfix，getmetatable，setmetatable，setclass
+        /// </summary>
         private string init_xlua = @" 
             local metatable = {}
             local rawget = rawget

@@ -108,6 +108,7 @@ namespace XLua
         internal ObjectCheckers objectCheckers;
         internal ObjectCasters objectCasters;
 
+        // push到lua虚拟栈的对象的缓存池
         internal readonly ObjectPool objects = new ObjectPool();
         internal readonly Dictionary<object, int> reverseMap = new Dictionary<object, int>(new ReferenceEqualsComparer());
 		internal LuaEnv luaEnv;
@@ -254,12 +255,12 @@ namespace XLua
             loadAssemblyFunction = new LuaCSFunction(StaticLuaCallbacks.LoadAssembly);
             castFunction = new LuaCSFunction(StaticLuaCallbacks.Cast);
 
-            LuaAPI.lua_newtable(L);
-            LuaAPI.lua_newtable(L);
+            LuaAPI.lua_newtable(L);  // 创建缓存表
+            LuaAPI.lua_newtable(L);  // 创建元表
             LuaAPI.xlua_pushasciistring(L, "__mode");
             LuaAPI.xlua_pushasciistring(L, "v");
-            LuaAPI.lua_rawset(L, -3);
-            LuaAPI.lua_setmetatable(L, -2);
+            LuaAPI.lua_rawset(L, -3);  // 元表[__mode] = v，表示这张表的所有值皆为弱引用
+            LuaAPI.lua_setmetatable(L, -2);  // 为缓存表设置元表
             cacheRef = LuaAPI.luaL_ref(L, LuaIndexes.LUA_REGISTRYINDEX);
 
             initCSharpCallLua();
@@ -678,7 +679,7 @@ namespace XLua
             }
             LuaAPI.xlua_pushasciistring(L, "import_type");
 			LuaAPI.lua_pushstdcallcfunction(L,importTypeFunction);
-			LuaAPI.lua_rawset(L, -3);  // 不触发元方法赋值t[k] = v，函数完成后会将k,v弹出。t是-3处的表（xlua），k是栈顶值（import_type），v是栈顶之下的值（importTypeFunction）
+			LuaAPI.lua_rawset(L, -3);  // 不触发元方法赋值t[k] = v，函数完成后会将k,v弹出。t是-3处的表（xlua），v是栈顶值（importTypeFunction），k是栈顶之下的值（import_type）
             LuaAPI.xlua_pushasciistring(L, "import_generic_type");
             LuaAPI.lua_pushstdcallcfunction(L, StaticLuaCallbacks.ImportGenericType);
             LuaAPI.lua_rawset(L, -3);
@@ -711,9 +712,9 @@ namespace XLua
             // 创建一张新的空表压栈
             LuaAPI.lua_createtable(L, 1, 4); // 4 for __gc, __tostring, __index, __newindex
             // 将栈顶对象添加到LuaIndexes.LUA_REGISTRYINDEX指向的表中，并返回其索引。（最后会弹出栈顶对象）
-            common_array_meta = LuaAPI.luaL_ref(L, LuaIndexes.LUA_REGISTRYINDEX);
+            common_array_meta = LuaAPI.luaL_ref(L, LuaIndexes.LUA_REGISTRYINDEX);  // 注册通用的数组类型对应的元表
             LuaAPI.lua_createtable(L, 1, 4); // 4 for __gc, __tostring, __index, __newindex
-            common_delegate_meta = LuaAPI.luaL_ref(L, LuaIndexes.LUA_REGISTRYINDEX);
+            common_delegate_meta = LuaAPI.luaL_ref(L, LuaIndexes.LUA_REGISTRYINDEX);  // 注册通用的委托类型对应的元表
         }
 		
 		internal void createFunctionMetatable(RealStatePtr L)
@@ -915,7 +916,7 @@ namespace XLua
             Func<RealStatePtr, int, T> get_func;
             if (tryGetGetFuncByType(typeof(T), out get_func))
             {
-                v = get_func(L, index);
+                v = get_func(L, index);  // 将给定索引处的值转换为{T}类型
             }
             else
             {
@@ -1025,6 +1026,7 @@ namespace XLua
             }
         }
 
+        // 获取type_id，type_id表示CS类型对应的元表在Lua注册表中的索引
         internal int getTypeId(RealStatePtr L, Type type, out bool is_first, LOGLEVEL log_level = LOGLEVEL.WARN)
         {
             int type_id;
@@ -1036,7 +1038,7 @@ namespace XLua
                     if (common_array_meta == -1) throw new Exception("Fatal Exception! Array Metatable not inited!");
                     return common_array_meta;
                 }
-                if (typeof(MulticastDelegate).IsAssignableFrom(type))
+                if (typeof(MulticastDelegate).IsAssignableFrom(type))  // 是否指定类型type的实例能否分配给MulticastDelegate类型的变量
                 {
                     if (common_delegate_meta == -1) throw new Exception("Fatal Exception! Delegate Metatable not inited!");
                     TryDelayWrapLoader(L, type);
@@ -1085,9 +1087,9 @@ namespace XLua
                         LuaAPI.lua_rawset(L, -3);
                     }
                     LuaAPI.lua_pushvalue(L, -1);
-                    type_id = LuaAPI.luaL_ref(L, LuaIndexes.LUA_REGISTRYINDEX);
+                    type_id = LuaAPI.luaL_ref(L, LuaIndexes.LUA_REGISTRYINDEX);  // 将元表的副本添加到注册表中
                     LuaAPI.lua_pushnumber(L, type_id);
-                    LuaAPI.xlua_rawseti(L, -2, 1);
+                    LuaAPI.xlua_rawseti(L, -2, 1);   // 元表[1] = type_id
                     LuaAPI.lua_pop(L, 1);
 
                     if (type.IsValueType())
@@ -1245,6 +1247,7 @@ namespace XLua
             }
         }
 
+        // 将对象push到lua虚拟栈上
         public void Push(RealStatePtr L, object o)
         {
             if (o == null)
@@ -1262,10 +1265,10 @@ namespace XLua
             bool is_enum = type.GetTypeInfo().IsEnum;
             bool is_valuetype = type.GetTypeInfo().IsValueType;
 #endif
-            bool needcache = !is_valuetype || is_enum;
+            bool needcache = !is_valuetype || is_enum;  // 如果是引用或枚举，会进行缓存
             if (needcache && (is_enum ? enumMap.TryGetValue(o, out index) : reverseMap.TryGetValue(o, out index)))
             {
-                if (LuaAPI.xlua_tryget_cachedud(L, index, cacheRef) == 1)
+                if (LuaAPI.xlua_tryget_cachedud(L, index, cacheRef) == 1)  // 检测lua缓存表中是否已缓存
                 {
                     return;
                 }
@@ -1279,12 +1282,12 @@ namespace XLua
             //如果一个type的定义含本身静态readonly实例时，getTypeId会push一个实例，这时候应该用这个实例
             if (is_first && needcache && (is_enum ? enumMap.TryGetValue(o, out index) : reverseMap.TryGetValue(o, out index))) 
             {
-                if (LuaAPI.xlua_tryget_cachedud(L, index, cacheRef) == 1)
+                if (LuaAPI.xlua_tryget_cachedud(L, index, cacheRef) == 1)   
                 {
                     return;
                 }
             }
-
+            // C#侧进行缓存
             index = addObject(o, is_valuetype, is_enum);
             LuaAPI.xlua_pushcsobj(L, index, type_id, needcache, cacheRef);
         }
@@ -1565,6 +1568,7 @@ namespace XLua
 
         private Dictionary<Type, Delegate> get_func_with_type = null;
 
+        // 通过类型{type}判断使用哪个转换函数，这样可以避免装箱拆箱
         bool tryGetGetFuncByType<T>(Type type, out T func) where T : class
         {
             if (get_func_with_type == null)
