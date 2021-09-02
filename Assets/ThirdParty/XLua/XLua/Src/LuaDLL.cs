@@ -132,9 +132,11 @@ namespace XLua.LuaDLL
 		[DllImport(LUADLL, CallingConvention = CallingConvention.Cdecl)]
 		public static extern void lua_insert(IntPtr L, int newTop);
 
+        // 从给定有效index处移除一个元素， 把这个索引之上的所有元素移下来填补上这个空隙。 不能用伪索引来调用这个函数，因为伪索引并不指向真实的栈上的位置。
 		[DllImport(LUADLL,CallingConvention=CallingConvention.Cdecl)]
 		public static extern void lua_remove(IntPtr L, int index);
 
+        // 把 t[k] 的值压栈， 这里的 t 是指索引index指向的值， 而 k 则是栈顶放的值。这个函数会弹出堆栈上的键，把结果放在栈上相同位置。
         [DllImport(LUADLL,CallingConvention=CallingConvention.Cdecl)]
 		public static extern int lua_rawget(IntPtr L, int index);
 
@@ -396,6 +398,7 @@ namespace XLua.LuaDLL
         [DllImport(LUADLL,CallingConvention=CallingConvention.Cdecl)]
 		public static extern int luaL_newmetatable(IntPtr L, string meta);//[-0, +1, m]
 
+        // 功能等于lua_gettable，只是以pcall模式运行
         [DllImport(LUADLL, CallingConvention = CallingConvention.Cdecl)]
         public static extern int xlua_pgettable(IntPtr L, int idx);
 
@@ -418,9 +421,12 @@ namespace XLua.LuaDLL
             return xluaL_loadbuffer(L, bytes, bytes.Length, name);
         }
 
+        // 如果obj索引处是一个userdata，且它有含有xlu_tag标志的元表，则返回userdata指向的内容，即translator.objects中的索引
+        // 实际就是校验obj处是否CS对象，是的话就返回该对象，相比xlua_tocsobj_fast多了一层校验
 		[DllImport(LUADLL,CallingConvention=CallingConvention.Cdecl)]
 		public static extern int xlua_tocsobj_safe(IntPtr L,int obj);//[-0, +0, m]
 
+        // 如果obj索引处是一个userdata，则返回userdata指向的内容
         [DllImport(LUADLL,CallingConvention=CallingConvention.Cdecl)]
 		public static extern int xlua_tocsobj_fast(IntPtr L,int obj);
 
@@ -429,6 +435,7 @@ namespace XLua.LuaDLL
             xlua_csharp_error(L);
             return 0;
         }
+        // 确保堆栈上至少有 extra 个额外空位
         [DllImport(LUADLL, CallingConvention = CallingConvention.Cdecl)]
 		public static extern bool lua_checkstack(IntPtr L,int extra);//[-0, +0, m]
 
@@ -448,6 +455,11 @@ namespace XLua.LuaDLL
         [DllImport(LUADLL, CallingConvention = CallingConvention.Cdecl)]
         public static extern int xlua_tryget_cachedud(IntPtr L, int key, int cache_ref);
 
+        // 真正将对象push到lua的方法，将在lua中创建一个userdata并将其指向key，然后为userdata设置meta_ref的元表，这样该userdata就成为了key表示的CS对象的lua代理
+        // key表示C#侧缓存该对象的索引
+        // meta_ref表示对象所属类型的元表的索引
+        // need_cache表示对象是否需要在lua中进行缓存，如果需要缓存，则在lua缓存表中保存键值对 key = userdata
+        // cache_ref表示lua缓存表的索引
         [DllImport(LUADLL, CallingConvention = CallingConvention.Cdecl)]
         public static extern void xlua_pushcsobj(IntPtr L, int key, int meta_ref, bool need_cache, int cache_ref);//[-0, +1, m]
 

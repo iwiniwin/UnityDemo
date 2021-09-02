@@ -133,6 +133,9 @@ namespace XLua
 		}
 #endif
 
+		/// <summary>
+		/// 为指定字段生成一个get访问器，获取字段的值
+		/// </summary>
 		static LuaCSFunction genFieldGetter(Type type, FieldInfo field)
 		{
 			if (field.IsStatic)
@@ -140,7 +143,7 @@ namespace XLua
 				return (RealStatePtr L) =>
 				{
 					ObjectTranslator translator = ObjectTranslatorPool.Instance.Find(L);
-					translator.PushAny(L, field.GetValue(null));
+					translator.PushAny(L, field.GetValue(null));  // 静态字段
 					return 1;
 				};
 			}
@@ -155,12 +158,15 @@ namespace XLua
 						return LuaAPI.luaL_error(L, "Expected type " + type + ", but got " + (obj == null ? "null" : obj.GetType().ToString()) + ", while get field " + field);
 					}
 
-					translator.PushAny(L, field.GetValue(obj));
+					translator.PushAny(L, field.GetValue(obj));  // 非静态字段，通过对象获取
 					return 1;
 				};
 			}
 		}
 
+		/// <summary>
+		/// 为指定字段生成一个set访问器，设置字段的值
+		/// </summary>
 		static LuaCSFunction genFieldSetter(Type type, FieldInfo field)
 		{
 			if (field.IsStatic)
@@ -404,7 +410,7 @@ namespace XLua
 		{
 			ObjectTranslator translator = ObjectTranslatorPool.Instance.Find(L);
 			BindingFlags flag = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | access;
-			FieldInfo[] fields = type.GetFields(flag);
+			FieldInfo[] fields = type.GetFields(flag);  // 获取type的所有字段，字段是在类中定义的变量
 			EventInfo[] all_events = type.GetEvents(flag | BindingFlags.Public | BindingFlags.NonPublic);
 
             LuaAPI.lua_checkstack(L, 2);
@@ -423,7 +429,7 @@ namespace XLua
 					fieldName = "&" + fieldName;
 				}
 
-				if (field.IsStatic && (field.IsInitOnly || field.IsLiteral))
+				if (field.IsStatic && (field.IsInitOnly || field.IsLiteral))  // 如果字段是静态的且不能修改或只能在构造函数中修改，将这些字段写入到cls_field表
 				{
 					LuaAPI.xlua_pushasciistring(L, fieldName);
 					translator.PushAny(L, field.GetValue(null));
@@ -820,6 +826,9 @@ namespace XLua
 			}
 		}
 
+		/// <summary>
+		/// 通过反射为指定类型生成对应的元表
+		/// </summary>
 		public static void ReflectionWrap(RealStatePtr L, Type type, bool privateAccessible)
 		{
             LuaAPI.lua_checkstack(L, 20);
@@ -833,6 +842,7 @@ namespace XLua
 				LuaAPI.lua_pop(L, 1);
 				LuaAPI.luaL_newmetatable(L, type.FullName);
 			}
+			// 为元表添加xlua_tag标志
 			LuaAPI.lua_pushlightuserdata(L, LuaAPI.xlua_tag());
 			LuaAPI.lua_pushnumber(L, 1);
 			LuaAPI.lua_rawset(L, -3);
@@ -1314,6 +1324,7 @@ namespace XLua
 			LuaAPI.lua_pop(L, 4);
 		}
 
+		// 将类型的完整名称按"."或"+"拆分到字符串列表中
 		static List<string> getPathOfType(Type type)
 		{
 			List<string> path = new List<string>();
@@ -1325,7 +1336,7 @@ namespace XLua
 
 			string class_name = type.ToString().Substring(type.Namespace == null ? 0 : type.Namespace.Length + 1);
 
-			if (type.IsNested)
+			if (type.IsNested)  // 如果该类定义嵌套在另一个类型定义中
 			{
 				path.AddRange(class_name.Split(new char[] { '+' }));
 			}
@@ -1363,6 +1374,16 @@ namespace XLua
 			}
 		}
 
+
+		/// <summary>
+		/// 建立命名空间表结构 同时在 注册表[xlua_csharp_namespace] 中添加键值对 [type对应的lua代理userdata] = cls_table
+		/// 对于type = A.B.C来说 建立的表结构如下
+		/// 注册表[xlua_csharp_namespace][A] = {
+		/// 	B = {
+		/// 		C = cls_table
+		/// 	}	
+		/// }
+		/// </summary>
 		public static void SetCSTable(RealStatePtr L, Type type, int cls_table)
 		{
 			int oldTop = LuaAPI.lua_gettop(L);
@@ -1371,6 +1392,12 @@ namespace XLua
             LuaAPI.lua_rawget(L, LuaIndexes.LUA_REGISTRYINDEX);
 
             List<string> path = getPathOfType(type);
+
+			// 对于A.B.C来说
+
+			// for循环处理A.B
+			// 1. 注册表[xlua_csharp_namespace][A] = {} 且出栈 注册表[xlua_csharp_namespace]
+			// 2. 注册表[xlua_csharp_namespace][A][B] = {} 且出栈 注册表[xlua_csharp_namespace][A]
 
 			for (int i = 0; i < path.Count - 1; ++i)
 			{
@@ -1381,7 +1408,7 @@ namespace XLua
 					LuaAPI.lua_settop(L, oldTop);
 					throw new Exception("SetCSTable for [" + type + "] error: " + err);
 				}
-				if (LuaAPI.lua_isnil(L, -1))
+				if (LuaAPI.lua_isnil(L, -1))  // 如果 注册表[xlua_csharp_namespace] 中没有key path[i] , 则添加一个 path[i] = {} 键值对
 				{
 					LuaAPI.lua_pop(L, 1);
 					LuaAPI.lua_createtable(L, 0, 0);
@@ -1397,11 +1424,14 @@ namespace XLua
 				LuaAPI.lua_remove(L, -2);
 			}
 
+			// 处理C
+			// 注册表[xlua_csharp_namespace][A][B][C] = cls_table 且出栈 [xlua_csharp_namespace][A][B][C]
 			LuaAPI.xlua_pushasciistring(L, path[path.Count - 1]);
 			LuaAPI.lua_pushvalue(L, cls_table);
-			LuaAPI.lua_rawset(L, -3);
+			LuaAPI.lua_rawset(L, -3);  
 			LuaAPI.lua_pop(L, 1);
 
+			// 在 注册表[xlua_csharp_namespace] 中添加键值对 [type对应的lua代理userdata] = cls_table
             LuaAPI.xlua_pushasciistring(L, LuaEnv.CSHARP_NAMESPACE);
             LuaAPI.lua_rawget(L, LuaIndexes.LUA_REGISTRYINDEX);
             ObjectTranslatorPool.Instance.Find(L).PushAny(L, type);

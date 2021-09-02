@@ -123,6 +123,7 @@ namespace XLua
         //无法访问的类，比如声明成internal，可以用其接口、基类的生成代码来访问
         private readonly Dictionary<Type, Type> aliasCfg = new Dictionary<Type, Type>();
 
+        // 生成代码中的XLuaGenAutoRegister.cs会通过这个方法将对应类型的元表生成器注册进来
         public void DelayWrapLoader(Type type, Action<RealStatePtr> loader)
         {
             delayWrap[type] = loader;
@@ -144,7 +145,7 @@ namespace XLua
 
             Action<RealStatePtr> loader;
             int top = LuaAPI.lua_gettop(L);
-            if (delayWrap.TryGetValue(type, out loader))
+            if (delayWrap.TryGetValue(type, out loader))  // 如果有预先注册的类型元表生成器，则直接使用
             {
                 delayWrap.Remove(type);
                 loader(L);
@@ -183,7 +184,7 @@ namespace XLua
 
             foreach (var nested_type in type.GetNestedTypes(BindingFlags.Public))
             {
-                if (nested_type.IsGenericTypeDefinition())
+                if (nested_type.IsGenericTypeDefinition())  // 过滤泛型类型定义
                 {
                     continue;
                 }
@@ -832,6 +833,7 @@ namespace XLua
             return (objectCasters.GetCaster(typeof(object))(L, index, null));
         }
 
+        // 通过idx获取typeid，在通过typeid获取对应的类型
         public Type GetTypeOf(RealStatePtr L, int idx)
         {
             Type type = null;
@@ -1087,7 +1089,7 @@ namespace XLua
                         LuaAPI.lua_rawset(L, -3);
                     }
                     LuaAPI.lua_pushvalue(L, -1);
-                    type_id = LuaAPI.luaL_ref(L, LuaIndexes.LUA_REGISTRYINDEX);  // 将元表的副本添加到注册表中
+                    type_id = LuaAPI.luaL_ref(L, LuaIndexes.LUA_REGISTRYINDEX);  // 将元表添加到注册表中
                     LuaAPI.lua_pushnumber(L, type_id);
                     LuaAPI.xlua_rawseti(L, -2, 1);   // 元表[1] = type_id
                     LuaAPI.lua_pop(L, 1);
@@ -1247,7 +1249,7 @@ namespace XLua
             }
         }
 
-        // 将对象push到lua虚拟栈上
+        // 将对象push到lua中
         public void Push(RealStatePtr L, object o)
         {
             if (o == null)
@@ -1289,6 +1291,7 @@ namespace XLua
             }
             // C#侧进行缓存
             index = addObject(o, is_valuetype, is_enum);
+            // 真正将对象push到lua，函数调用完成后栈顶是 CS对象对应的lua代理userdata
             LuaAPI.xlua_pushcsobj(L, index, type_id, needcache, cacheRef);
         }
 
@@ -1336,6 +1339,9 @@ namespace XLua
             }
         }
 
+        // 获取导出到lua过的CS对象
+        // index表示lua栈的索引
+        // udata表示objects缓存的对象的索引
         private object getCsObj(RealStatePtr L, int index, int udata)
         {
             object obj;
@@ -1347,7 +1353,7 @@ namespace XLua
                 if (type == typeof(decimal))
                 {
                     decimal v;
-                    Get(L, index, out v);
+                    Get(L, index, out v);  // decimal对象有自己独特的获取方式
                     return v;
                 }
                 GetCSObject get;
@@ -1404,6 +1410,7 @@ namespace XLua
             return fix_cs_functions[index];
         }
 
+        // 使用FixCSFunctionWraper = StaticLuaCallbacks.FixCSFunction来包装原函数
         internal void PushFixCSFunction(RealStatePtr L, LuaCSFunction func)
         {
             if (func == null)
@@ -1614,6 +1621,7 @@ namespace XLua
 
         public delegate void GetFunc<T>(RealStatePtr L, int idx,  out T val);
 
+        // Gen生成的代码会调用
         public void RegisterPushAndGetAndUpdate<T>(Action<RealStatePtr, T> push, GetFunc<T> get, Action<RealStatePtr, int, T> update)
         {
             Type type = typeof(T);
@@ -1685,6 +1693,7 @@ namespace XLua
             return ret;
         }
 
+        // 获取给定索引处的值，必须是decimal类型
         public void Get(RealStatePtr L, int index, out decimal val)
         {
             LuaTypes lua_type = LuaAPI.lua_type(L, index);

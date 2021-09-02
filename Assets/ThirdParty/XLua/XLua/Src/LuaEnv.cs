@@ -125,8 +125,8 @@ namespace XLua
 
                 LuaAPI.xlua_pushasciistring(rawL, Utils.LuaIndexsFieldName);
                 LuaAPI.lua_newtable(rawL);  // 创建一个空表 newtable2
-                LuaAPI.lua_pushvalue(rawL, -3);   // 将newtable的副本压栈
-                LuaAPI.lua_setmetatable(rawL, -2);  // 将newtable的副本设置为newtable2的元表，并将newtable的副本弹出栈
+                LuaAPI.lua_pushvalue(rawL, -3);   // 将newtable压栈
+                LuaAPI.lua_setmetatable(rawL, -2);  // 将newtable设置为newtable2的元表，并将newtable弹出栈
                 LuaAPI.lua_rawset(rawL, LuaIndexes.LUA_REGISTRYINDEX);  // 注册表["LuaIndexs"] = newtable2
 
                 LuaAPI.xlua_pushasciistring(rawL, Utils.LuaNewIndexsFieldName);
