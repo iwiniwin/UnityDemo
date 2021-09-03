@@ -999,8 +999,8 @@ namespace XLua
 		}
 
 		/// <summary>
-		/// 开始注册CS对象前的预操作
-		/// 准备CS类型对应的元表，method表，getter表，setter表
+		/// 对类非静态域注册前的预操作
+		/// 准备好对应的表。method表，getter表，setter表
 		/// </summary>
 		//meta: -4, method:-3, getter: -2, setter: -1
 		public static void BeginObjectRegister(Type type, RealStatePtr L, ObjectTranslator translator, int meta_count, int method_count, int getter_count,
@@ -1071,12 +1071,13 @@ namespace XLua
 		}
 
 		public const int OBJ_META_IDX = -4;
+		// method表索引
 		public const int METHOD_IDX = -3;
 		public const int GETTER_IDX = -2;
 		public const int SETTER_IDX = -1;
 
 		/// <summary>
-		/// 结束CS对象的注册
+		/// 结束类非静态域的注册
 		/// </summary>
 #if GEN_CODE_MINIMIZE
         public static void EndObjectRegister(Type type, RealStatePtr L, ObjectTranslator translator, CSharpWrapper csIndexer,
@@ -1135,7 +1136,7 @@ namespace XLua
 				LuaAPI.lua_rawget(L, LuaIndexes.LUA_REGISTRYINDEX);//store in lua indexs function tables
 				translator.Push(L, type);
 				LuaAPI.lua_pushvalue(L, -3);
-				LuaAPI.lua_rawset(L, -3);
+				LuaAPI.lua_rawset(L, -3);  // 注册表[LuaIndexs][type] = __index函数
 				LuaAPI.lua_pop(L, 1);
 			}
 
@@ -1185,7 +1186,7 @@ namespace XLua
 				LuaAPI.lua_rawget(L, LuaIndexes.LUA_REGISTRYINDEX);//store in lua newindexs function tables
 				translator.Push(L, type);
 				LuaAPI.lua_pushvalue(L, -3);
-				LuaAPI.lua_rawset(L, -3);
+				LuaAPI.lua_rawset(L, -3);  // 注册表[LuaNewIndexs][type] = __newindex函数
 				LuaAPI.lua_pop(L, 1);
 			}
 
@@ -1209,7 +1210,7 @@ namespace XLua
 			idx = abs_idx(LuaAPI.lua_gettop(L), idx);
 			LuaAPI.xlua_pushasciistring(L, name);
 			LuaAPI.lua_pushstdcallcfunction(L, func);
-			LuaAPI.lua_rawset(L, idx);
+			LuaAPI.lua_rawset(L, idx);  // 将idx指向的表中添加键值对 name = func
 		}
 #endif
 
@@ -1232,9 +1233,13 @@ namespace XLua
 			idx = abs_idx(LuaAPI.lua_gettop(L), idx);
 			LuaAPI.xlua_pushasciistring(L, name);
 			translator.PushAny(L, obj);
-			LuaAPI.lua_rawset(L, idx);
+			LuaAPI.lua_rawset(L, idx);  // 将idx指向的表中添加键值对 name = obj
 		}
 
+		/// <summary>
+		/// 对类静态域注册前的预操作
+		/// 构建类的命名空间结构表，准备好对应的表。cls_table表，meta_table表，static_getter表，static_setter表
+		/// </summary>
 #if GEN_CODE_MINIMIZE
         public static void BeginClassRegister(Type type, RealStatePtr L, CSharpWrapper creator, int class_field_count,
             int static_getter_count, int static_setter_count)
@@ -1293,6 +1298,9 @@ namespace XLua
 		public const int CLS_GETTER_IDX = -2;
 		public const int CLS_SETTER_IDX = -1;
 
+		/// <summary>
+		/// 结束类静态域的注册
+		/// </summary>
 		public static void EndClassRegister(Type type, RealStatePtr L, ObjectTranslator translator)
 		{
 			int top = LuaAPI.lua_gettop(L);
@@ -1307,14 +1315,14 @@ namespace XLua
 			LuaAPI.lua_pushvalue(L, cls_idx);
 			translator.Push(L, type.BaseType());
 			LuaAPI.xlua_pushasciistring(L, LuaClassIndexsFieldName);
-			LuaAPI.lua_rawget(L, LuaIndexes.LUA_REGISTRYINDEX);
+			LuaAPI.lua_rawget(L, LuaIndexes.LUA_REGISTRYINDEX);  
 			LuaAPI.gen_cls_indexer(L);
 
 			LuaAPI.xlua_pushasciistring(L, LuaClassIndexsFieldName);
-			LuaAPI.lua_rawget(L, LuaIndexes.LUA_REGISTRYINDEX);//store in lua indexs function tables
+			LuaAPI.lua_rawget(L, LuaIndexes.LUA_REGISTRYINDEX);//store in lua indexs function tables  
 			translator.Push(L, type);
 			LuaAPI.lua_pushvalue(L, -3);
-			LuaAPI.lua_rawset(L, -3);
+			LuaAPI.lua_rawset(L, -3);  // 注册表[LuaClassIndexs][type] = __index函数
 			LuaAPI.lua_pop(L, 1);
 
 			LuaAPI.lua_rawset(L, cls_meta_idx);
@@ -1332,7 +1340,7 @@ namespace XLua
 			LuaAPI.lua_rawget(L, LuaIndexes.LUA_REGISTRYINDEX);//store in lua newindexs function tables
 			translator.Push(L, type);
 			LuaAPI.lua_pushvalue(L, -3);
-			LuaAPI.lua_rawset(L, -3);
+			LuaAPI.lua_rawset(L, -3);  // 注册表[LuaClassNewIndexs][type] = __newindex函数
 			LuaAPI.lua_pop(L, 1);
 
 			LuaAPI.lua_rawset(L, cls_meta_idx);

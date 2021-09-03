@@ -123,7 +123,7 @@ namespace XLua
         //无法访问的类，比如声明成internal，可以用其接口、基类的生成代码来访问
         private readonly Dictionary<Type, Type> aliasCfg = new Dictionary<Type, Type>();
 
-        // 生成代码中的XLuaGenAutoRegister.cs会通过这个方法将对应类型的元表生成器注册进来
+        // 生成代码中的XLuaGenAutoRegister.cs会通过这个方法将对应类型的元表生成器注册进来，loader其实就是生成的wrap类的__Register方法
         public void DelayWrapLoader(Type type, Action<RealStatePtr> loader)
         {
             delayWrap[type] = loader;
@@ -1274,9 +1274,9 @@ namespace XLua
             bool is_valuetype = type.GetTypeInfo().IsValueType;
 #endif
             bool needcache = !is_valuetype || is_enum;  // 如果是引用或枚举，会进行缓存
-            if (needcache && (is_enum ? enumMap.TryGetValue(o, out index) : reverseMap.TryGetValue(o, out index)))
+            if (needcache && (is_enum ? enumMap.TryGetValue(o, out index) : reverseMap.TryGetValue(o, out index)))  // 如果有缓存
             {
-                if (LuaAPI.xlua_tryget_cachedud(L, index, cacheRef) == 1)  // 检测lua缓存表中是否已缓存
+                if (LuaAPI.xlua_tryget_cachedud(L, index, cacheRef) == 1)  
                 {
                     return;
                 }

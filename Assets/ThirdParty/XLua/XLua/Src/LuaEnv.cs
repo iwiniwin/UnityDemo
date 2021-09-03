@@ -173,6 +173,7 @@ namespace XLua
 
                 errorFuncRef = LuaAPI.get_error_func_ref(rawL);
 
+                // 依次调用Gen生成的代码注册的初始化器
                 if (initers != null)
                 {
                     for (int i = 0; i < initers.Count; i++)
@@ -189,6 +190,7 @@ namespace XLua
 
         private static List<Action<LuaEnv, ObjectTranslator>> initers = null;
 
+        // Gen生成的代码通过此函数添加初始化器
         public static void AddIniter(Action<LuaEnv, ObjectTranslator> initer)
         {
             if (initers == null)
