@@ -155,6 +155,7 @@ namespace XLua.LuaDLL
         [DllImport(LUADLL,CallingConvention=CallingConvention.Cdecl)]
 		public static extern void lua_pushvalue(IntPtr L, int index);
 
+        // 把一个新的 C 闭包压栈。参数 n 告之函数有多少个值需要关联到函数上。 lua_pushcclosure 也会把这些值从栈上弹出。
         [DllImport(LUADLL, CallingConvention = CallingConvention.Cdecl)]
         public static extern void lua_pushcclosure(IntPtr L, IntPtr fn, int n);//[-n, +1, m]
 
@@ -463,15 +464,51 @@ namespace XLua.LuaDLL
         [DllImport(LUADLL, CallingConvention = CallingConvention.Cdecl)]
         public static extern void xlua_pushcsobj(IntPtr L, int key, int meta_ref, bool need_cache, int cache_ref);//[-0, +1, m]
 
+        /*
+        // 创建一个__index函数闭包，__index调用时需要2个参数，obj和key
+        // 创建闭包时栈上需要7个关联upvalue
+        // [1]: methods, [2]:getters, [3]:csindexer, [4]:base, [5]:indexfuncs, [6]:arrayindexer, [7]:baseindex
+        __index索引逻辑
+        1. 如果methods中有key，则压栈methods[key]。查询成员方法或事件
+        2. 如果getters中有key，则调用getters[key]。查询成员字段或属性
+        3. 如果arrayindexer中有key且key是数字，则调用arrayindexer[key]
+        4. 尝试调用csindexer。查询索引器
+        5. 尝试在父类中查找
+            while(base != null)
+            {
+                if(indexfuncs[base]){
+                    baseindex = indexfuncs[base]
+                    break;
+                }else{
+                    base = base["BaseType"]
+                }
+            }
+            如果baseindex不为空，调用baseindex指向的父类__index函数进行查找
+        */
         [DllImport(LUADLL, CallingConvention = CallingConvention.Cdecl)]//[,,m]
         public static extern int gen_obj_indexer(IntPtr L);
 
+        /*
+        // 创建一个__newindex函数闭包，__newindex调用时需要3个参数，[1]: obj, [2]: key, [3]: value
+        // 创建闭包时栈上需要6个关联upvalue
+        // [1]:setters, [2]:csnewindexer, [3]:base, [4]:newindexfuncs, [5]:arrayindexer, [6]:basenewindex
+        */
         [DllImport(LUADLL, CallingConvention = CallingConvention.Cdecl)]//[,,m]
         public static extern int gen_obj_newindexer(IntPtr L);
 
+        /*
+        // 为类的静态域创建一个__index函数闭包，__index调用时需要2个参数，obj和key
+        // 创建闭包时栈上需要5个关联upvalue
+        // [1]:getters, [2]:feilds, [3]:base, [4]:indexfuncs, [5]:baseindex
+        */
         [DllImport(LUADLL, CallingConvention = CallingConvention.Cdecl)]//[,,m]
         public static extern int gen_cls_indexer(IntPtr L);
 
+        /*
+        // 为类的静态域创建一个__newindex函数闭包，__newindex调用时需要3个参数，[1]: obj, [2]: key, [3]: value
+        // 创建闭包时栈上需要4个关联upvalue
+        // [1]:setters, [2]:base, [3]:indexfuncs, [4]:baseindex
+        */
         [DllImport(LUADLL, CallingConvention = CallingConvention.Cdecl)]//[,,m]
         public static extern int gen_cls_newindexer(IntPtr L);
 

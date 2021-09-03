@@ -134,6 +134,10 @@ namespace XLua
             interfaceBridgeCreators.Add(type, creator);
         }
 
+        /// <summary>
+        /// 为指定type以及其嵌套type生成对应的元表
+        /// 如果有预先注册的类型元表生成器，则使用其生成 否则 使用反射
+        /// </summary>
         Dictionary<Type, bool> loaded_types = new Dictionary<Type, bool>();
         public bool TryDelayWrapLoader(RealStatePtr L, Type type)
         {
@@ -881,6 +885,7 @@ namespace XLua
             return objectCheckers.GetChecker(type)(L, index);
         }
 
+        // 获取index索引处的对象
         public object GetObject(RealStatePtr L, int index, Type type)
         {
             int udata = LuaAPI.xlua_tocsobj_safe(L, index);
@@ -1149,6 +1154,7 @@ namespace XLua
             }
         }
 
+        // 将对象压入栈
         public void PushAny(RealStatePtr L, object o)
         {
             if (o == null)
@@ -1249,7 +1255,7 @@ namespace XLua
             }
         }
 
-        // 将对象push到lua中
+        // 将CS对象push到lua中
         public void Push(RealStatePtr L, object o)
         {
             if (o == null)

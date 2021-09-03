@@ -714,7 +714,7 @@ namespace XLua
 
         public ObjectCast GetCaster(Type type)
         {
-            if (type.IsByRef) type = type.GetElementType();
+            if (type.IsByRef) type = type.GetElementType();  // 如果是按引用传递的，则使用引用的对象的type
 
             Type underlyingType = Nullable.GetUnderlyingType(type);
             if (underlyingType != null)

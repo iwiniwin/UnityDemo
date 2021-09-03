@@ -277,6 +277,7 @@ namespace XLua
         }
     }
 
+    // 函数wrap，主要是能够处理重载函数，根据参数选择调用不同的函数
     public class MethodWrap
     {
         private string methodName;
@@ -451,6 +452,7 @@ namespace XLua
             return delegateCache[type];
         }
 
+        // 为指定type的eventName事件生成wrap函数，wrap函数主要实现了事件的+和-方法
         public LuaCSFunction GetEventWrap(Type type, string eventName)
         {
             if (!methodsCache.ContainsKey(type))

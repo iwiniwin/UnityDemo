@@ -405,6 +405,16 @@ namespace XLua
 			public bool IsStatic;
 		}
 
+		/// <summary>
+		/// 通过反射分析指定type的组成部分，字段，属性，方法等，并为这些部分生成对应的wrap函数写入对应的表中
+		/// cls_field写入静态只读字段，静态事件，静态方法
+		/// cls_getter写入静态字段的get访问器，静态属性的get访问器
+		/// cls_setter写入静态字段的set访问器，静态属性的set访问器
+		/// obj_field写入成员事件，成员方法
+		/// obj_getter写入成员字段的get访问器，成员属性的get访问器
+		/// obj_setter写入成员字段的set访问器，成员属性的set访问器
+		/// obj_meta写入操作符函数
+		/// </summary>
 		static void makeReflectionWrap(RealStatePtr L, Type type, int cls_field, int cls_getter, int cls_setter,
 			int obj_field, int obj_getter, int obj_setter, int obj_meta, out LuaCSFunction item_getter, out LuaCSFunction item_setter, BindingFlags access)
 		{
@@ -437,6 +447,9 @@ namespace XLua
 				}
 				else
 				{
+					// 为类的字段分别生成get和set访问器，并分别写入到cls_getter和cls_setter
+					// 为对象的字段分别生成get和set访问器，并分别写入到obj_getter和obj_setter
+
 					LuaAPI.xlua_pushasciistring(L, fieldName);
 					translator.PushFixCSFunction(L, genFieldGetter(type, field));
 					LuaAPI.lua_rawset(L, field.IsStatic ? cls_getter : obj_getter);
@@ -447,6 +460,7 @@ namespace XLua
 				}
 			}
 
+			// 为每个event生成wrap方法，并将其写入cls_field或obj_field
 			EventInfo[] events = type.GetEvents(flag);
 			for (int i = 0; i < events.Length; ++i)
 			{
@@ -468,9 +482,11 @@ namespace XLua
 				}
 			}
 
+			// 处理索引器
 			var item_array = items.ToArray();
 			item_getter = item_array.Length > 0 ? genItemGetter(type, item_array) : null;
 			item_setter = item_array.Length > 0 ? genItemSetter(type, item_array) : null;
+			// 处理Method
 			MethodInfo[] methods = type.GetMethods(flag);
 			if (access == BindingFlags.NonPublic)
 			{
@@ -845,8 +861,8 @@ namespace XLua
 			// 为元表添加xlua_tag标志
 			LuaAPI.lua_pushlightuserdata(L, LuaAPI.xlua_tag());
 			LuaAPI.lua_pushnumber(L, 1);
-			LuaAPI.lua_rawset(L, -3);
-			int obj_meta = LuaAPI.lua_gettop(L);
+			LuaAPI.lua_rawset(L, -3);  // 元表[xlua_tag] = 1
+			int obj_meta = LuaAPI.lua_gettop(L);  
 
 			LuaAPI.lua_newtable(L);
 			int cls_meta = LuaAPI.lua_gettop(L);
@@ -882,22 +898,22 @@ namespace XLua
 			LuaAPI.lua_rawset(L, obj_meta);
 
 			LuaAPI.xlua_pushasciistring(L, "__index");
-			LuaAPI.lua_pushvalue(L, obj_field);
-			LuaAPI.lua_pushvalue(L, obj_getter);
-			translator.PushFixCSFunction(L, item_getter);
-			translator.PushAny(L, type.BaseType());
+			LuaAPI.lua_pushvalue(L, obj_field);  // 1.upvalue methods = obj_field
+			LuaAPI.lua_pushvalue(L, obj_getter);  // 2.upvalue getters = obj_getter
+			translator.PushFixCSFunction(L, item_getter);  // 3.upvalue csindexer = item_getter
+			translator.PushAny(L, type.BaseType());  // 压入BaseType，4.upvalue base
 			LuaAPI.xlua_pushasciistring(L, LuaIndexsFieldName);
-			LuaAPI.lua_rawget(L, LuaIndexes.LUA_REGISTRYINDEX);
-			LuaAPI.lua_pushnil(L);
-			LuaAPI.gen_obj_indexer(L);
+			LuaAPI.lua_rawget(L, LuaIndexes.LUA_REGISTRYINDEX);  // 5.upvalue indexfuncs = 注册表[LuaIndexs]
+			LuaAPI.lua_pushnil(L);  // 6.upvalue arrayindexer = nil
+			LuaAPI.gen_obj_indexer(L);  // 生成__index函数
 			//store in lua indexs function tables
 			LuaAPI.xlua_pushasciistring(L, LuaIndexsFieldName);
-			LuaAPI.lua_rawget(L, LuaIndexes.LUA_REGISTRYINDEX);
-			translator.Push(L, type);
+			LuaAPI.lua_rawget(L, LuaIndexes.LUA_REGISTRYINDEX);  
+			translator.Push(L, type);  // 压入type
 			LuaAPI.lua_pushvalue(L, -3);
-			LuaAPI.lua_rawset(L, -3);
+			LuaAPI.lua_rawset(L, -3);  // 注册表[LuaIndexs][type] = __index函数
 			LuaAPI.lua_pop(L, 1);
-			LuaAPI.lua_rawset(L, obj_meta); // set __index
+			LuaAPI.lua_rawset(L, obj_meta); // set __index  即 obj_meta["__index"] = 生成的__index函数
 
 			LuaAPI.xlua_pushasciistring(L, "__newindex");
 			LuaAPI.lua_pushvalue(L, obj_setter);
@@ -912,14 +928,14 @@ namespace XLua
 			LuaAPI.lua_rawget(L, LuaIndexes.LUA_REGISTRYINDEX);
 			translator.Push(L, type);
 			LuaAPI.lua_pushvalue(L, -3);
-			LuaAPI.lua_rawset(L, -3);
+			LuaAPI.lua_rawset(L, -3);  // 注册表[LuaNewIndexs][type] = __newindex函数
 			LuaAPI.lua_pop(L, 1);
 			LuaAPI.lua_rawset(L, obj_meta); // set __newindex
 											//finish init obj metatable
 
 			LuaAPI.xlua_pushasciistring(L, "UnderlyingSystemType");
 			translator.PushAny(L, type);
-			LuaAPI.lua_rawset(L, cls_field);
+			LuaAPI.lua_rawset(L, cls_field);  // cls_field["UnderlyingSystemType"] = type  ， 记录类的基础类型
 
 			if (type != null && type.IsEnum())
 			{
@@ -941,7 +957,7 @@ namespace XLua
 			LuaAPI.lua_rawget(L, LuaIndexes.LUA_REGISTRYINDEX);
 			translator.Push(L, type);
 			LuaAPI.lua_pushvalue(L, -3);
-			LuaAPI.lua_rawset(L, -3);
+			LuaAPI.lua_rawset(L, -3);  // 注册表[LuaClassIndexs][type] = __index函数
 			LuaAPI.lua_pop(L, 1);
 			LuaAPI.lua_rawset(L, cls_meta); // set __index 
 
@@ -956,10 +972,11 @@ namespace XLua
 			LuaAPI.lua_rawget(L, LuaIndexes.LUA_REGISTRYINDEX);
 			translator.Push(L, type);
 			LuaAPI.lua_pushvalue(L, -3);
-			LuaAPI.lua_rawset(L, -3);
+			LuaAPI.lua_rawset(L, -3);  // // 注册表[LuaClassNewIndexs][type] = __newindex函数
 			LuaAPI.lua_pop(L, 1);
 			LuaAPI.lua_rawset(L, cls_meta); // set __newindex
 
+			// 处理构造函数
 			LuaCSFunction constructor = typeof(Delegate).IsAssignableFrom(type) ? translator.metaFunctions.DelegateCtor : translator.methodWrapsCache.GetConstructorWrap(type);
 			if (constructor == null)
 			{
@@ -971,10 +988,10 @@ namespace XLua
 
 			LuaAPI.xlua_pushasciistring(L, "__call");
 			translator.PushFixCSFunction(L, constructor);
-			LuaAPI.lua_rawset(L, cls_meta);
+			LuaAPI.lua_rawset(L, cls_meta);  // obj_meta["__call"] = constructor
 
 			LuaAPI.lua_pushvalue(L, cls_meta);
-			LuaAPI.lua_setmetatable(L, cls_field);
+			LuaAPI.lua_setmetatable(L, cls_field);  // 将 cls_meta 设置为 cls_field 的元表
 
 			LuaAPI.lua_pop(L, 8);
 
