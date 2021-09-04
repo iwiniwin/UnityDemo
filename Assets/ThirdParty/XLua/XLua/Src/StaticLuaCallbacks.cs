@@ -845,6 +845,7 @@ namespace XLua
         }
 
 
+        // 向Lua中注册名为className的类型
         [MonoPInvokeCallback(typeof(LuaCSFunction))]
         public static int ImportType(RealStatePtr L)
         {

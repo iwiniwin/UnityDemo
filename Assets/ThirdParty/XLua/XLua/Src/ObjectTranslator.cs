@@ -741,6 +741,7 @@ namespace XLua
             typeIdMap.Add(typeof(LuaCSFunction), type_id);
         }
 		
+        // 根据className查找对应类型
 		internal Type FindType(string className, bool isQualifiedName = false)
 		{
             foreach (Assembly assembly in assemblies)
@@ -1034,6 +1035,7 @@ namespace XLua
         }
 
         // 获取type_id，type_id表示CS类型对应的元表在Lua注册表中的索引
+        // 此函数会为type生成对应的Lua元表
         internal int getTypeId(RealStatePtr L, Type type, out bool is_first, LOGLEVEL log_level = LOGLEVEL.WARN)
         {
             int type_id;
