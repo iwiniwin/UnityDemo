@@ -844,7 +844,7 @@ namespace XLua
 #endif
         }
 
-
+        // 传递到Lua的LuaCSFunction
         // 向Lua中注册名为className的类型
         [MonoPInvokeCallback(typeof(LuaCSFunction))]
         public static int ImportType(RealStatePtr L)
@@ -852,13 +852,13 @@ namespace XLua
             try
             {
                 ObjectTranslator translator = ObjectTranslatorPool.Instance.Find(L);
-                string className = LuaAPI.lua_tostring(L, 1);
+                string className = LuaAPI.lua_tostring(L, 1);  // 一个参数 className
                 Type type = translator.FindType(className);
                 if (type != null)
                 {
                     if (translator.GetTypeId(L, type) >= 0)
                     {
-                        LuaAPI.lua_pushboolean(L, true);
+                        LuaAPI.lua_pushboolean(L, true);  // 一个返回值，返回true表示注册成功
                     }
                     else
                     {
@@ -867,9 +867,9 @@ namespace XLua
                 }
                 else
                 {
-                    LuaAPI.lua_pushnil(L);
+                    LuaAPI.lua_pushnil(L);  // 一个返回值
                 }
-                return 1;
+                return 1;  // 表示返回值个数是1
             }
             catch (System.Exception e)
             {
