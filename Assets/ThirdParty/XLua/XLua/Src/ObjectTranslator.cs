@@ -838,7 +838,7 @@ namespace XLua
             return (objectCasters.GetCaster(typeof(object))(L, index, null));
         }
 
-        // 通过idx获取typeid，在通过typeid获取对应的类型
+        // 获取idx处对象的typeid，在通过typeid获取对应的类型
         public Type GetTypeOf(RealStatePtr L, int idx)
         {
             Type type = null;
@@ -1325,6 +1325,7 @@ namespace XLua
             LuaAPI.xlua_pushcsobj(L, index, type_id, true, cacheRef);
         }
 
+        // 将index处的对象替换为obj
         public void Update(RealStatePtr L, int index, object obj)
         {
             int udata = LuaAPI.xlua_tocsobj_fast(L, index);
@@ -1353,7 +1354,7 @@ namespace XLua
         private object getCsObj(RealStatePtr L, int index, int udata)
         {
             object obj;
-            if (udata == -1)
+            if (udata == -1)  
             {
                 if (LuaAPI.lua_type(L, index) != LuaTypes.LUA_TUSERDATA) return null;
 
@@ -1374,7 +1375,7 @@ namespace XLua
                     return null;
                 }
             }
-            else if (objects.TryGetValue(udata, out obj))
+            else if (objects.TryGetValue(udata, out obj))  // 如果objects中有对应的索引，则直接返回索引指向的对象
             {
 #if !UNITY_5 && !XLUA_GENERAL && !UNITY_2017 && !UNITY_2017_1_OR_NEWER && !UNITY_2018
                 if (obj != null && obj is UnityEngine.Object && ((obj as UnityEngine.Object) == null))

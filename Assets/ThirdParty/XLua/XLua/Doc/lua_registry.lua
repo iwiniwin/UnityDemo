@@ -42,6 +42,7 @@ local lua_registry = {
                     UnderlyingSystemType = "userdata:typeof(A.B.C)_obj",
                     ["静态只读字段1"] = "value",
                     ["静态只读字段2"] = "value",
+                    ["静态方法1"] = "func",
                 },
             }
         },

@@ -112,6 +112,7 @@ namespace XLua
             return LuaAPI.lua_type(L, idx) == LuaTypes.LUA_TLIGHTUSERDATA;
         }
 
+        // 生成指定类型的校验器，这个校验器的作用是判断给定idx处的值是否是对应类型
         private ObjectCheck genChecker(Type type)
         {
             ObjectCheck fixTypeCheck = (RealStatePtr L, int idx) =>
@@ -415,6 +416,9 @@ namespace XLua
             castersMap[type] = oc;
         }
 
+        /// <summary>
+        /// 生成一个指定类型转换器，这个转换器的作用是将idx处的对象转换为指定type类型
+        /// </summary>
         private ObjectCast genCaster(Type type)
         {
             ObjectCast fixTypeGetter = (RealStatePtr L, int idx, object target) =>
@@ -712,6 +716,7 @@ namespace XLua
             };
         }
 
+        // 获取指定类型的转换器
         public ObjectCast GetCaster(Type type)
         {
             if (type.IsByRef) type = type.GetElementType();  // 如果是按引用传递的，则使用引用的对象的type

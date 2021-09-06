@@ -38,7 +38,7 @@ namespace XLua
 
         object[] defaultValueArray;
 
-        bool isVoid = true;
+        bool isVoid = true;  // 表示函数是否有返回值
 
         int luaStackPosStart = 1;
 
@@ -63,25 +63,25 @@ namespace XLua
         public void Init(ObjectCheckers objCheckers, ObjectCasters objCasters)
         {
             if ((typeof(Delegate) != targetType && typeof(Delegate).IsAssignableFrom(targetType)) ||
-                !method.IsStatic || method.IsConstructor)
+                !method.IsStatic || method.IsConstructor)  // 非静态函数或是构造函数
             {
                 luaStackPosStart = 2;
                 if (!method.IsConstructor)
                 {
-                    targetNeeded = true;
+                    targetNeeded = true;  // 非静态函数调用需要target
                 }
             }
 
             var paramInfos = method.GetParameters();
             refPos = new int[paramInfos.Length];
 
-            List<int> inPosList = new List<int>();
-            List<int> outPosList = new List<int>();
+            List<int> inPosList = new List<int>();  // 输入形参（包括ref修饰）
+            List<int> outPosList = new List<int>();  // out与ref修饰的参数（也被认为是Lua的返回值）
 
             List<ObjectCheck> paramsChecks = new List<ObjectCheck>();
             List<ObjectCast> paramsCasts = new List<ObjectCast>();
-            List<bool> isOptionalList = new List<bool>();
-            List<object> defaultValueList = new List<object>();
+            List<bool> isOptionalList = new List<bool>();  // 记录i处的inPosList[i]参数是否是可选的
+            List<object> defaultValueList = new List<object>();  // 记录i处的inPosList[i]参数的默认值
 
             for(int i = 0; i < paramInfos.Length; i++)
             {
@@ -105,7 +105,7 @@ namespace XLua
                     inPosList.Add(i);
                     var paramType = paramInfos[i].IsDefined(typeof(ParamArrayAttribute), false) || (!paramInfos[i].ParameterType.IsArray && paramInfos[i].ParameterType.IsByRef ) ? 
                         paramInfos[i].ParameterType.GetElementType() : paramInfos[i].ParameterType;
-                    paramsChecks.Add (objCheckers.GetChecker(paramType));
+                    paramsChecks.Add (objCheckers.GetChecker(paramType));  
                     paramsCasts.Add (objCasters.GetCaster(paramType));
                     isOptionalList.Add(paramInfos[i].IsOptional);
                     var defalutValue = paramInfos[i].DefaultValue;
@@ -128,9 +128,9 @@ namespace XLua
             isOptionalArray = isOptionalList.ToArray();
             defaultValueArray = defaultValueList.ToArray();
 
-            if (paramInfos.Length > 0 && paramInfos[paramInfos.Length - 1].IsDefined(typeof(ParamArrayAttribute), false))
-            {
-                paramsType = paramInfos[paramInfos.Length - 1].ParameterType.GetElementType();
+            if (paramInfos.Length > 0 && paramInfos[paramInfos.Length - 1].IsDefined(typeof(ParamArrayAttribute), false))  
+            { 
+                paramsType = paramInfos[paramInfos.Length - 1].ParameterType.GetElementType();  // 如果最后一个参数是参数数组，则记录在paramsType
             }
 
             args = new object[paramInfos.Length];
@@ -145,22 +145,24 @@ namespace XLua
             }
         }
 
+        // 校验当前的堆栈环境是否符合对自身所包裹的method的调用
         public bool Check(RealStatePtr L)
         {
             int luaTop = LuaAPI.lua_gettop(L);
             int luaStackPos = luaStackPosStart;
 
+            // 对输入形参进行校验
             for(int i = 0; i < checkArray.Length; i++)
             {
                 if ((i == (checkArray.Length - 1)) && (paramsType != null))
                 {
                     break;
                 }
-                if(luaStackPos > luaTop && !isOptionalArray[i])
+                if(luaStackPos > luaTop && !isOptionalArray[i])  // 传递参数不够，且缺少的参数还不是可选的
                 {
-                    return false;
+                    return false;  
                 }
-                else if(luaStackPos <= luaTop && !checkArray[i](L, luaStackPos))
+                else if(luaStackPos <= luaTop && !checkArray[i](L, luaStackPos))  // 对应位置的参数类型不符合
                 {
                     return false;
                 }
@@ -175,6 +177,7 @@ namespace XLua
                 checkArray[checkArray.Length - 1](L, luaStackPos) : true) : luaStackPos == luaTop + 1;
         }
 
+        // 触发对OverloadMethodWrap包裹的函数的调用
         public int Call(RealStatePtr L)
         {
             try
@@ -189,7 +192,7 @@ namespace XLua
                 object target = null;
                 MethodBase toInvoke = method;
 
-                if (luaStackPosStart > 1)
+                if (luaStackPosStart > 1)  // 成员方法调用，需要先获取对象
                 {
                     target = translator.FastGetCSObj(L, 1);
                     if (target is Delegate)
@@ -238,7 +241,7 @@ namespace XLua
 
                 object ret = null;
 
-
+                // 通过反射实际调用被包裹的函数
                 ret = toInvoke.IsConstructor ? ((ConstructorInfo)method).Invoke(args) : method.Invoke(targetNeeded ? target : null, args);
 
                 if (targetNeeded && targetType.IsValueType())
@@ -251,7 +254,7 @@ namespace XLua
                 if (!isVoid)
                 {
                     //UnityEngine.Debug.Log(toInvoke.ToString() + " ret:" + ret);
-                    translator.PushAny(L, ret);
+                    translator.PushAny(L, ret);  // 将返回值压入栈中
                     nRet++;
                 }
 
@@ -261,11 +264,11 @@ namespace XLua
                     {
                         translator.Update(L, luaStackPosStart + refPos[outPosArray[i]], args[outPosArray[i]]);
                     }
-                    translator.PushAny(L, args[outPosArray[i]]);
+                    translator.PushAny(L, args[outPosArray[i]]);  // out或ref修饰的参数也认为是返回值，压入到栈中
                     nRet++;
                 }
 
-                return nRet;
+                return nRet;  // 返回返回值的个数，告诉Lua
             }
             finally
             {
@@ -291,6 +294,7 @@ namespace XLua
             this.forceCheck = forceCheck;
         }
 
+        // 通过调用此方法，触发选择MethodWrap中包裹的哪个重载函数并调用
         public int Call(RealStatePtr L)
         {
             try
@@ -534,6 +538,10 @@ namespace XLua
             return methodsOfType[eventName];
         }
 
+        /// <summary>
+        /// 为一系列同名函数methodBases生成一个统一的函数类
+        /// 主要作用是为多个重载函数生成一个同样的委托
+        /// </summary>
         public MethodWrap _GenMethodWrap(Type type, string methodName, IEnumerable<MemberInfo> methodBases, bool forceCheck = false)
         { 
             List<OverloadMethodWrap> overloads = new List<OverloadMethodWrap>();

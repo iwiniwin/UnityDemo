@@ -225,7 +225,7 @@ namespace XLua.LuaDLL
         [DllImport(LUADLL,CallingConvention=CallingConvention.Cdecl)]
 		public static extern void lua_pushnil(IntPtr L);
 
-        // push一个lua_CSFunction，n表示参数个数
+        // push一个lua_CSFunction，n表示要为闭包关联的值的个数
 		public static void lua_pushstdcallcfunction(IntPtr L, lua_CSFunction function, int n = 0)//[-0, +1, m]
         {
 #if XLUA_GENERAL || (UNITY_WSA && !UNITY_EDITOR)
@@ -428,7 +428,7 @@ namespace XLua.LuaDLL
 		[DllImport(LUADLL,CallingConvention=CallingConvention.Cdecl)]
 		public static extern int xlua_tocsobj_safe(IntPtr L,int obj);//[-0, +0, m]
 
-        // 如果obj索引处是一个userdata，则返回userdata指向的内容
+        // 如果obj索引处是一个userdata，则返回userdata指向的内容，即C#缓存对象的索引
         [DllImport(LUADLL,CallingConvention=CallingConvention.Cdecl)]
 		public static extern int xlua_tocsobj_fast(IntPtr L,int obj);
 
@@ -545,7 +545,7 @@ namespace XLua.LuaDLL
         [DllImport(LUADLL, CallingConvention = CallingConvention.Cdecl)]
         public static extern ulong lua_touint64(IntPtr L, int idx);
 
-        // push一个lua_CSFunction，n表示参数个数
+        // push一个lua_CSFunction，n表示要为闭包关联的值的个数
         [DllImport(LUADLL, CallingConvention = CallingConvention.Cdecl)]
         public static extern void xlua_push_csharp_function(IntPtr L, IntPtr fn, int n);//[-0,+1,m]
 
