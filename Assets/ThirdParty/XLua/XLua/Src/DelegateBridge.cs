@@ -134,6 +134,7 @@ namespace XLua
         {
         }
 
+        // 生成代码会调用这个方法，用来调用luaReference指向的方法
         public void PCall(IntPtr L, int nArgs, int nResults, int errFunc)
         {
             if (LuaAPI.lua_pcall(L, nArgs, nResults, errFunc) != 0)

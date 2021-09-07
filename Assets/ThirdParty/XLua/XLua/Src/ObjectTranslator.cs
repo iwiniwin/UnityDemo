@@ -441,6 +441,7 @@ namespace XLua
             {
                 // get by parameters
                 MethodInfo delegateMethod = delegateType.GetMethod("Invoke");
+                // 生成代码为配置了 CSharpCallLua的委托 生成以__Gen_Delegate_Imp开头的方法 并添加到 DelegateBridge 类中
                 var methods = bridge.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly).Where(m => !m.IsGenericMethodDefinition && (m.Name.StartsWith("__Gen_Delegate_Imp") || m.Name == "Action")).ToArray();
                 // 查找bridge中与delegateMethod匹配的方法，这个方法必须是以__Gen_Delegate_Imp或Action开头
                 for (int i = 0; i < methods.Length; i++)  
@@ -556,6 +557,7 @@ namespace XLua
             }
         }
 
+        // 释放Lua环境时，通过此方法判断所有生成的委托是否都被释放了
         public bool AllDelegateBridgeReleased()
         {
             foreach (var kv in delegate_bridges)
@@ -568,6 +570,8 @@ namespace XLua
             return true;
         }
 
+        // 释放Lua对象
+        // 为了保证传递到CS的Lua对象不会被自动回收，会将Lua对象添加到Lua注册表中，释放就是将该对象从注册表中移除，使它可以被自动垃圾回收
         public void ReleaseLuaBase(RealStatePtr L, int reference, bool is_delegate)
         {
             if(is_delegate)
@@ -792,6 +796,8 @@ namespace XLua
             return false;
         }
 		
+        // 回收指定索引处的对象，CS这边不再引用该对象
+        // 传递到Lua的CS对象是被弱引用的，当Lua那边不再引用该对象时，触发LuaGC时，会调用Lua的__gc，__gc方法又会调用collectObject，使CS这边也不再引用该对象，从而使该对象可以被自动垃圾回收
 		internal void collectObject(int obj_index_to_collect)
 		{
 			object o;
