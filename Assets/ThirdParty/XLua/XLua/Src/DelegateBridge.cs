@@ -52,6 +52,7 @@ namespace XLua
             return false;
         }
 
+        // 缓存key类型的委托value
         public void AddDelegate(Type key, Delegate value)
         {
             if (key == firstKey)
@@ -193,6 +194,7 @@ namespace XLua
             }
         }
 
+        // 压入参数
         public void InParam<T>(T p)
         {
             try

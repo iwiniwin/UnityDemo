@@ -381,6 +381,7 @@ namespace XLua
             }
         }
 
+        // 将idx处的值转换为LuaTable对象
         private object getLuaTable(RealStatePtr L, int idx, object target)
         {
             if (LuaAPI.lua_type(L, idx) == LuaTypes.LUA_TUSERDATA)

@@ -42,7 +42,7 @@ namespace XLua
                 LuaAPI.lua_getref(L, luaReference);
                 translator.PushByType(L, key);
 
-                if (0 != LuaAPI.xlua_pgettable(L, -2))
+                if (0 != LuaAPI.xlua_pgettable(L, -2))  // 查询 表[key]
                 {
                     string err = LuaAPI.lua_tostring(L, -1);
                     LuaAPI.lua_settop(L, oldTop);
@@ -58,7 +58,7 @@ namespace XLua
 
                 try
                 {
-                    translator.Get(L, -1, out value);
+                    translator.Get(L, -1, out value);  // 获取栈顶的元素，即 表[key]
                 }
                 catch (Exception e)
                 {

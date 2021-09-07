@@ -23,7 +23,7 @@ namespace XLua
     public abstract class LuaBase : IDisposable
     {
         protected bool disposed;
-        protected readonly int luaReference;
+        protected readonly int luaReference;  // 表示对象在Lua注册表中的索引
         protected readonly LuaEnv luaEnv;
 
 #if UNITY_EDITOR || XLUA_GENERAL

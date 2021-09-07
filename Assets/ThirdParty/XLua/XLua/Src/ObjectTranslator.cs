@@ -442,14 +442,15 @@ namespace XLua
                 // get by parameters
                 MethodInfo delegateMethod = delegateType.GetMethod("Invoke");
                 var methods = bridge.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly).Where(m => !m.IsGenericMethodDefinition && (m.Name.StartsWith("__Gen_Delegate_Imp") || m.Name == "Action")).ToArray();
-                for (int i = 0; i < methods.Length; i++)
+                // 查找bridge中与delegateMethod匹配的方法，这个方法必须是以__Gen_Delegate_Imp或Action开头
+                for (int i = 0; i < methods.Length; i++)  
                 {
                     if (!methods[i].IsConstructor && Utils.IsParamsMatch(delegateMethod, methods[i]))
                     {
                         var foundMethod = methods[i];
                         delegateCreator = (o) =>
 #if !UNITY_WSA || UNITY_EDITOR
-                            Delegate.CreateDelegate(delegateType, o, foundMethod);
+                            Delegate.CreateDelegate(delegateType, o, foundMethod);  // 创建表示foundMethod的delegateType类型的委托
 #else
                             foundMethod.CreateDelegate(delegateType, o); 
 #endif
@@ -464,7 +465,7 @@ namespace XLua
                 delegateCreatorCache.Add(delegateType, delegateCreator);
             }
 
-            ret = delegateCreator(bridge);
+            ret = delegateCreator(bridge);  // 创建委托
             if (ret != null)
             {
                 return ret;
@@ -472,7 +473,9 @@ namespace XLua
 
             throw new InvalidCastException("This type must add to CSharpCallLua: " + delegateType.GetFriendlyName());
         }
-        Dictionary<int, WeakReference> delegate_bridges = new Dictionary<int, WeakReference>();
+
+        // 使用指定idx处的值创建一个delegateType类型的委托
+        Dictionary<int, WeakReference> delegate_bridges = new Dictionary<int, WeakReference>();  // 弱引用创建的DelegateBridge
         public object CreateDelegateBridge(RealStatePtr L, Type delegateType, int idx)
         {
             LuaAPI.lua_pushvalue(L, idx);
@@ -511,7 +514,7 @@ namespace XLua
             int reference = LuaAPI.luaL_ref(L);
             LuaAPI.lua_pushvalue(L, idx);
             LuaAPI.lua_pushnumber(L, reference);
-            LuaAPI.lua_rawset(L, LuaIndexes.LUA_REGISTRYINDEX);
+            LuaAPI.lua_rawset(L, LuaIndexes.LUA_REGISTRYINDEX);  // 注册表[idx值] = reference
             DelegateBridgeBase bridge;
             try
             {

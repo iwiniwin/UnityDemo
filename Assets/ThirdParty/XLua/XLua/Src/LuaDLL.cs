@@ -200,6 +200,7 @@ namespace XLua.LuaDLL
 		[DllImport(LUADLL,CallingConvention=CallingConvention.Cdecl)]
 		public static extern void xlua_rawseti(IntPtr L, int tableIndex, long index);//[-1, +0, m]
 
+        // 获取注册表reference处索引的值
         public static void lua_getref(IntPtr L, int reference)
 		{
 			xlua_rawgeti(L,LuaIndexes.LUA_REGISTRYINDEX,reference);

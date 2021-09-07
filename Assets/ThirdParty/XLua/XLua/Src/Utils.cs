@@ -1473,6 +1473,7 @@ namespace XLua
 
 		public const string LuaClassNewIndexsFieldName = "LuaClassNewIndexs";
 
+		// 判断两个方法的返回值，参数等是否一致
 		public static bool IsParamsMatch(MethodInfo delegateMethod, MethodInfo bridgeMethod)
 		{
 			if (delegateMethod == null || bridgeMethod == null)
