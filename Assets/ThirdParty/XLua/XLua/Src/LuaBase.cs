@@ -46,7 +46,7 @@ namespace XLua
         public void Dispose()
         {
             Dispose(true);
-            GC.SuppressFinalize(this);
+            GC.SuppressFinalize(this);  // 请求公共语言运行时不要调用自己的终结器
         }
 
         public virtual void Dispose(bool disposeManagedResources)

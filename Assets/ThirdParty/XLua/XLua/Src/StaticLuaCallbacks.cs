@@ -85,13 +85,14 @@ namespace XLua
             }
         }
 
+        // 将原函数（看成是普通object）作为upvalue
         [MonoPInvokeCallback(typeof(LuaCSFunction))]
         static int StaticCSFunction(RealStatePtr L)
         {
             try
             {
                 ObjectTranslator translator = ObjectTranslatorPool.Instance.Find(L);
-                LuaCSFunction func = (LuaCSFunction)translator.FastGetCSObj(L, LuaAPI.xlua_upvalueindex(1));
+                LuaCSFunction func = (LuaCSFunction)translator.FastGetCSObj(L, LuaAPI.xlua_upvalueindex(1));  // 直接获取到该函数
                 return func(L);
             }
             catch (Exception e)
@@ -100,6 +101,7 @@ namespace XLua
             }
         }
 
+        // 将原函数在fix_cs_functions的索引作为upvalue，调用时通过upvalue获取到原函数调用
         [MonoPInvokeCallback(typeof(LuaCSFunction))]
         static int FixCSFunction(RealStatePtr L)
         {
@@ -107,7 +109,7 @@ namespace XLua
             {
                 ObjectTranslator translator = ObjectTranslatorPool.Instance.Find(L);
                 int idx = LuaAPI.xlua_tointeger(L, LuaAPI.xlua_upvalueindex(1));
-                LuaCSFunction func = (LuaCSFunction)translator.GetFixCSFunction(idx);
+                LuaCSFunction func = (LuaCSFunction)translator.GetFixCSFunction(idx);  // 通过List<LuaCSFunction> fix_cs_functions的索引获取到原函数
                 return func(L);
             }
             catch (Exception e)
