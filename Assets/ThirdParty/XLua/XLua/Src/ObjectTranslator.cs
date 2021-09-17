@@ -1308,7 +1308,7 @@ namespace XLua
             }
             // C#侧进行缓存
             index = addObject(o, is_valuetype, is_enum);
-            // 真正将对象push到lua，函数调用完成后栈顶是 CS对象对应的lua代理userdata
+            // 将代表对象的索引push到lua，函数调用完成后栈顶是 CS对象对应的lua代理userdata
             LuaAPI.xlua_pushcsobj(L, index, type_id, needcache, cacheRef);
         }
 

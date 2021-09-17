@@ -105,7 +105,7 @@ namespace XLua
                     inPosList.Add(i);
                     var paramType = paramInfos[i].IsDefined(typeof(ParamArrayAttribute), false) || (!paramInfos[i].ParameterType.IsArray && paramInfos[i].ParameterType.IsByRef ) ? 
                         paramInfos[i].ParameterType.GetElementType() : paramInfos[i].ParameterType;
-                    paramsChecks.Add (objCheckers.GetChecker(paramType));  
+                    paramsChecks.Add (objCheckers.GetChecker(paramType));  // 为每个参数都获取到对应的类型校验器，当函数调用时，会通过校验器判断参数类型是否符合
                     paramsCasts.Add (objCasters.GetCaster(paramType));
                     isOptionalList.Add(paramInfos[i].IsOptional);
                     var defalutValue = paramInfos[i].DefaultValue;
