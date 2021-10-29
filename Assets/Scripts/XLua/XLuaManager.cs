@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System;
+using System.IO;
 using UnityEngine;
 using XLua;
 using UDK;
@@ -97,14 +98,15 @@ public class XLuaManager : UnitySingleton<XLuaManager>
     {
         string scriptPath = string.Empty;
         string filepath = string.Empty;
-#if UNITY_EDITOR
         filepath = luaPath.Replace(".", "/") + ".lua";
-        scriptPath = System.IO.Path.Combine(Application.dataPath, luaScriptsFolder);
+        scriptPath = System.IO.Path.Combine(Application.persistentDataPath, luaScriptsFolder);
         scriptPath = System.IO.Path.Combine(scriptPath, filepath);
+        if(!File.Exists(scriptPath))
+        {
+            scriptPath = System.IO.Path.Combine(Application.dataPath, luaScriptsFolder);
+            scriptPath = System.IO.Path.Combine(scriptPath, filepath);
+        }
         return FileUtil.ReadAllBytes(scriptPath);
-#endif
-        //AB加载或者其他加载
-        // return LuaReaderHelper.Instance.LoadFromPackage(luaPath);  // todo
     }
 
     private void ClearComponentBinders()
